@@ -12,7 +12,21 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title> BitTrack </q-toolbar-title>
+        <q-toolbar-title style="color: var(--q-secondary)">
+          <q-img
+            src="/bit-track-favicon.png"
+            class="title-icon"
+            style="
+              width: 12.5vw;
+              height: 12.5vw;
+              max-width: 64px;
+              max-height: 64px;
+              margin-right: 0px;
+            "
+            alt="BitTrack Icon"
+          />
+          BitTrack
+        </q-toolbar-title>
 
         <div v-if="!isMobileOrTablet" class="desktop-nav">
           <q-btn
@@ -153,6 +167,8 @@
       <div class="footer-content">
         <div class="footer-section">
           <p>
+            <q-icon name="code" size="sm" class="footer-icon" />
+            <!-- GitHub icon -->
             GitHub:
             <a
               href="https://github.com/is0xjh25"
@@ -164,6 +180,7 @@
         </div>
         <div class="footer-section">
           <p>
+            <q-icon name="link" />
             API Provided by
             <a
               href="https://www.coingecko.com/"
@@ -175,6 +192,7 @@
         </div>
         <div class="footer-section">
           <p>
+            <q-icon name="email" size="sm" class="footer-icon" />
             Contact:
             <a href="mailto:is0.jimhsiao@gmail.com" class="footer-link"
               >is0.jimhsiao@gmail.com</a
