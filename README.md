@@ -34,7 +34,7 @@ The project is crafted for a seamless user experience across devices. The main p
    - AI-powered investment suggestions based on asset allocation.
 3. **Market Page**: Live market data overview, including prices and trends across a range of cryptocurrencies.
 4. **AI Consultant Page**: ~~Dedicated to providing live, personalised investment suggestions. Based on the user’s portfolio and market conditions, the AI consultant offers real-time insights and recommendations to support informed investment decisions.~~ <br/>
-   `⚠️ This feature is upcoming.`
+   ⚠️ `This feature is upcoming.`
 5. **Responsive Layout**: Optimised for desktop and mobile devices using Quasar’s responsive components.
 
 ### Database Tables
