@@ -72,8 +72,8 @@ The code is modular, with encapsulated API calls and Supabase functions to maint
 ## Deployment
 - The app is deployed on **[Vercel](https://vercel.com/)**. 
 - Visit the website: [BitTrack](https://bit-track.vercel.app/#/signup).
-- Since Supabase only provides SMTP email services for users on the free plan, you can use the shared account for testing purposes. However, the password reset functionality will be disabled.
-- **Shared Account*:
+- Since Supabase’s free plan only supports SMTP email services for project members, you can use the shared account for testing purposes. However, the sign up and password reset functionality will be disabled.
+- **Shared Account**:
   ```.env
   email=demo@example.com
   password=bittrack
