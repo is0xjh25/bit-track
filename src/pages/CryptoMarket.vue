@@ -3,70 +3,56 @@
     <h3>Crypto Market</h3>
     <p>Check current market prices for cryptocurrencies.</p>
 
-    <div class="table-wrapper">
-      <q-table
-        v-if="isLargeScreen"
-        :rows="cryptocurrencies"
-        :columns="largeScreenColumns"
-        row-key="id"
-        flat
-        bordered
-        :loading="loading"
-        :pagination="paginationOptions"
-        :rows-per-page-options="[]"
-        hide-bottom
-        class="clickable-rows"
-      >
-        <template v-slot:body="props">
+    <div class="market-wrapper" v-if="isLargeScreen">
+      <table class="market-table">
+        <thead>
+          <tr>
+            <th @click="sortColumn('name')">Name</th>
+            <th @click="sortColumn('symbol')">Symbol</th>
+            <th @click="sortColumn('current_price')">Price</th>
+            <th @click="sortColumn('price_change_percentage_24h')">
+              24h Change
+            </th>
+            <th @click="sortColumn('market_cap')">Market Cap</th>
+          </tr>
+        </thead>
+        <tbody>
           <tr
-            @click="openCoinLink(props.row)"
+            v-for="(crypto, index) in sortedCryptocurrencies"
+            :key="index"
+            @click="openCoinLink(crypto)"
             class="row-clickable"
-            style="border-bottom: 5px solid var(--q-secondary)"
           >
-            <td style="color: var(--q-secondary)">{{ props.row.name }}</td>
-            <td style="color: var(--q-secondary); text-align: right">
-              {{ props.row.symbol }}
-            </td>
-            <td style="color: var(--q-secondary); text-align: right">
-              {{ props.row.current_price }}
-            </td>
-            <td style="color: var(--q-secondary); text-align: right">
-              {{ props.row.price_change_percentage_24h }}%
-            </td>
-            <td style="color: var(--q-secondary); text-align: right">
-              {{ props.row.market_cap }}
-            </td>
+            <td>{{ crypto.name }}</td>
+            <td>{{ crypto.symbol }}</td>
+            <td>{{ crypto.current_price }}</td>
+            <td>{{ crypto.price_change_percentage_24h }}%</td>
+            <td>{{ crypto.market_cap }}</td>
           </tr>
-        </template>
-      </q-table>
+        </tbody>
+      </table>
+    </div>
 
-      <q-table
-        v-else
-        :rows="cryptocurrencies"
-        :columns="smallScreenColumns"
-        row-key="id"
-        flat
-        bordered
-        :loading="loading"
-        :pagination="paginationOptions"
-        :rows-per-page-options="[]"
-        hide-bottom
-        class="clickable-rows"
-      >
-        <template v-slot:body="props">
-          <tr @click="openCoinLink(props.row)" class="row-clickable">
-            <td style="color: var(--q-secondary)" class="align-center">
-              {{ props.row.symbol }}
-            </td>
-            <td style="color: var(--q-secondary)" class="align-right">
-              {{ props.row.current_price }}
-            </td>
-            <td style="color: var(--q-secondary)" class="align-right">
-              {{ props.row.price_change_percentage_24h }}%
-            </td>
+    <div class="market-wrapper" v-else>
+      <table class="market-table">
+        <thead>
+          <tr>
+            <th @click="sortColumn('symbol')">Symbol</th>
+            <th @click="sortColumn('current_price')">Price</th>
           </tr>
-        </template>
-      </q-table>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(crypto, index) in sortedCryptocurrencies"
+            :key="index"
+            @click="openCoinLink(crypto)"
+            class="row-clickable"
+          >
+            <td>{{ crypto.symbol }}</td>
+            <td>{{ crypto.current_price }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="pagination-controls">
@@ -74,7 +60,6 @@
         v-if="isLargeScreen"
         label="Previous"
         @click="previousPage"
-        :disabled="currentPage === 1 || loading"
         color="primary"
       />
       <q-icon
@@ -83,8 +68,7 @@
         @click="previousPage"
         :class="{ disabled: currentPage === 1 || loading }"
         color="primary"
-        class="icon-mobile"
-        style="cursor: pointer"
+        class="icon-mobile pagination-icon"
       />
 
       <div class="page-input-go">
@@ -98,13 +82,11 @@
           color="secondary"
           class="white-font"
           style="width: 80px; text-align: center"
-          @keyup.enter="goToPage"
         />
         <q-btn
           v-if="isLargeScreen"
           label="Go"
           @click="goToPage"
-          :disabled="loading"
           color="primary"
         />
         <q-icon
@@ -113,8 +95,7 @@
           @click="goToPage"
           :class="{ disabled: loading }"
           color="primary"
-          class="icon-mobile"
-          style="cursor: pointer"
+          class="icon-mobile pagination-icon"
         />
       </div>
 
@@ -122,7 +103,6 @@
         v-if="isLargeScreen"
         label="Next"
         @click="nextPage"
-        :disabled="loading"
         color="primary"
       />
       <q-icon
@@ -131,11 +111,12 @@
         @click="nextPage"
         :class="{ disabled: loading }"
         color="primary"
-        class="icon-mobile"
-        style="cursor: pointer"
+        class="icon-mobile pagination-icon"
       />
     </div>
 
+    <div v-if="loading" class="loading-message">Loading market data...</div>
+    <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
     <p class="attribution-text">All data is provided by CoinGecko.</p>
   </div>
 </template>
@@ -150,85 +131,53 @@ export default {
       currentPage: 1,
       currentPageInput: 1,
       autoRefreshInterval: null,
-      largeScreenColumns: [
-        {
-          name: "name",
-          label: "Name",
-          field: "name",
-          align: "left",
-          sortable: true,
-        },
-        {
-          name: "symbol",
-          label: "Symbol",
-          field: "symbol",
-          align: "right",
-          sortable: true,
-        },
-        {
-          name: "current_price",
-          label: "Price (USD)",
-          field: "current_price",
-          align: "right",
-          sortable: true,
-        },
-        {
-          name: "price_change_percentage_24h",
-          label: "24h Change (%)",
-          field: "price_change_percentage_24h",
-          align: "right",
-          sortable: true,
-          format: (val) => `${val.toFixed(2)}%`,
-        },
-        {
-          name: "market_cap",
-          label: "Market Cap",
-          field: "market_cap",
-          align: "right",
-          sortable: true,
-        },
-      ],
-      smallScreenColumns: [
-        {
-          name: "symbol",
-          label: "Symbol",
-          field: "symbol",
-          align: "center",
-          sortable: true,
-        },
-        {
-          name: "current_price",
-          label: "Price",
-          field: "current_price",
-          align: "center",
-          sortable: true,
-        },
-        {
-          name: "price_change_percentage_24h",
-          label: "%Change",
-          field: "price_change_percentage_24h",
-          align: "center",
-          sortable: true,
-          format: (val) => `${val.toFixed(1)}%`,
-        },
-      ],
-      loading: false,
-      paginationOptions: { rowsPerPage: 10 },
-      totalPages: 100,
       isLargeScreen: window.innerWidth > 768,
+      loading: false,
+      errorMessage: "",
+      totalPages: 100,
+      sortColumnKey: "name",
+      sortAscending: true,
+      coingeckoBaseURL: "https://www.coingecko.com/en/coins/",
     };
+  },
+  computed: {
+    sortedCryptocurrencies() {
+      return [...this.cryptocurrencies].sort((a, b) => {
+        const key = this.sortColumnKey;
+        const valA = typeof a[key] === "string" ? a[key].toLowerCase() : a[key];
+        const valB = typeof b[key] === "string" ? b[key].toLowerCase() : b[key];
+
+        if (valA < valB) return this.sortAscending ? -1 : 1;
+        if (valA > valB) return this.sortAscending ? 1 : -1;
+        return 0;
+      });
+    },
   },
   methods: {
     async loadCryptocurrencies(page = 1) {
       this.loading = true;
+      this.errorMessage = "";
       try {
         this.cryptocurrencies = await fetchCryptoMarket(page);
         this.currentPage = page;
         this.currentPageInput = page;
       } catch (error) {
-        console.error("Failed to load cryptocurrencies:", error);
+        if (!error.response) {
+          this.errorMessage =
+            "Network error: Unable to fetch data due to a CORS policy issue or no internet connection.";
+        } else {
+          this.errorMessage = "Failed to load cryptocurrency data.";
+        }
       } finally {
         this.loading = false;
+      }
+    },
+    sortColumn(columnKey) {
+      if (this.sortColumnKey === columnKey) {
+        this.sortAscending = !this.sortAscending;
+      } else {
+        this.sortColumnKey = columnKey;
+        this.sortAscending = true;
       }
     },
     nextPage() {
@@ -255,7 +204,7 @@ export default {
     openCoinLink(row) {
       const coinId = row.id;
       if (coinId) {
-        window.open(`https://www.coingecko.com/en/coins/${coinId}`, "_blank");
+        window.open(`${this.coingeckoBaseURL}${coinId}`, "_blank");
       } else {
         console.error("Coin ID is undefined for this row:", row);
       }
@@ -266,14 +215,13 @@ export default {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
 
-    // Set up auto-refresh every 1 minutes
     this.autoRefreshInterval = setInterval(() => {
       this.loadCryptocurrencies(this.currentPage);
-    }, 60000); // 60000 ms = 1 minutes
+    }, 60000);
   },
   beforeUnmount() {
     window.removeEventListener("resize", this.handleResize);
-    clearInterval(this.autoRefreshInterval); // Clear the interval to prevent memory leaks
+    clearInterval(this.autoRefreshInterval);
   },
 };
 </script>
@@ -283,14 +231,66 @@ export default {
   margin: auto;
   width: 80vw;
   min-width: 350px;
-  overflow: hidden !important;
+  max-height: 80vh;
+  overflow: hidden;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
 }
 
-@media (min-width: 768px) {
-  .table-wrapper {
-    max-height: 450px;
-    overflow-y: auto;
-  }
+.market-wrapper {
+  overflow-y: auto;
+  width: 100%;
+  max-height: 60vh;
+}
+
+.market-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.market-table th,
+.market-table td {
+  padding: 10px;
+  text-align: center;
+  border-top: 1px solid var(--q-secondary);
+  border-bottom: 1px solid var(--q-secondary);
+  cursor: pointer;
+}
+
+.market-table th {
+  background-color: #f3f4f6;
+}
+
+.market-table tbody tr:hover {
+  background-color: #e9ecef;
+}
+
+.market-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.market-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.market-wrapper::-webkit-scrollbar-thumb {
+  background-color: var(--q-primary);
+  border-radius: 10px;
+}
+
+.market-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: var(--q-secondary);
+}
+
+.market-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: var(--q-primary) transparent;
+}
+
+.row-clickable {
+  cursor: pointer;
 }
 
 .pagination-controls {
@@ -299,47 +299,49 @@ export default {
   align-items: center;
   margin-top: 20px;
 }
+
 .page-input-go {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.icon-mobile {
-  font-size: 10vw;
+
+.icon-mobile,
+.pagination-icon {
+  font-size: 2em;
 }
+
+.pagination-button {
+  font-size: 1.2em;
+  padding: 12px 20px;
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 .attribution-text {
   text-align: center;
   margin-top: 20px;
   font-size: 0.9rem;
   color: #888;
 }
-.clickable-rows tr {
-  cursor: pointer;
-}
-.disabled {
-  pointer-events: none;
-  opacity: 0.5;
+
+.loading-message,
+.error-message {
+  text-align: center;
+  font-size: 1.1rem;
+  margin-top: 25px;
+  color: #888;
 }
 
-.align-center {
-  text-align: center !important;
+.error-message {
+  color: var(--q-negative);
 }
 
-.align-right {
-  text-align: right !important;
-}
-
-::v-deep .q-table {
-  background-color: var(--q-dark) !important;
-  color: var(--q-primary) !important;
-}
-
-::v-deep .clickable-rows tbody tr:hover {
-  background-color: var(--q-primary);
-}
-
-::v-deep .white-font .q-field__native,
-::v-deep .white-font .q-field__label {
-  color: white !important;
+:deep(.white-font .q-field__native),
+:deep(.white-font .q-field__label) {
+  color: var(--q-secondary) !important;
 }
 </style>
