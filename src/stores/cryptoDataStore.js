@@ -4,13 +4,13 @@ import axios from "axios";
 
 export const useCryptoStore = defineStore("cryptoStore", () => {
   // State
+  const COIN_GECKO = "https://api.coingecko.com/api/v3/coins/markets";
   const cryptocurrencies = ref([]);
   const currentPage = ref(1);
   const totalPages = ref(1);
   const loading = ref(false);
   const errorMessage = ref(null);
   const itemsPerPage = ref(10);
-  const COIN_GECKO = "https://api.coingecko.com/api/v3/coins/markets";
   let autoRefreshInterval = null;
 
   // Actions

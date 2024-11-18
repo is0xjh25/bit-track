@@ -5,46 +5,21 @@
     <div v-if="cryptoStore.loading" class="loading-message">
       Loading market data...
     </div>
-    <div v-if="cryptoStore.errorMessage" class="error-message">
+    <div v-else-if="cryptoStore.errorMessage" class="error-message">
       {{ cryptoStore.errorMessage }}
     </div>
     <div v-else>
-      <div v-if="isLargeScreen" class="market-wrapper">
+      <div class="market-wrapper">
         <table class="market-table">
           <thead>
             <tr>
-              <th @click="sortColumn('name')">Name</th>
-              <th @click="sortColumn('symbol')">Symbol</th>
-              <th @click="sortColumn('current_price')">Price</th>
-              <th @click="sortColumn('price_change_percentage_24h')">
-                24h Change
-              </th>
-              <th @click="sortColumn('market_cap')">Market Cap</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="crypto in sortedPageData"
-              :key="crypto.id"
-              @click="openCoinLink(crypto)"
-              class="row-clickable"
-            >
-              <td>{{ crypto.name }}</td>
-              <td>{{ crypto.symbol }}</td>
-              <td>${{ crypto.current_price }}</td>
-              <td>{{ crypto.price_change_percentage_24h }}%</td>
-              <td>${{ crypto.market_cap }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div v-else class="market-wrapper">
-        <table class="market-table">
-          <thead>
-            <tr>
+              <th @click="sortColumn('name')" v-show="isLargeScreen">Name</th>
               <th @click="sortColumn('symbol')">Symbol</th>
               <th @click="sortColumn('current_price')">Price</th>
               <th @click="sortColumn('price_change_percentage_24h')">24h%</th>
+              <th @click="sortColumn('market_cap')" v-show="isLargeScreen">
+                Market Cap
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -54,9 +29,11 @@
               @click="openCoinLink(crypto)"
               class="row-clickable"
             >
+              <td v-show="isLargeScreen">{{ crypto.name }}</td>
               <td>{{ crypto.symbol }}</td>
               <td>${{ crypto.current_price }}</td>
               <td>{{ crypto.price_change_percentage_24h }}%</td>
+              <td v-show="isLargeScreen">${{ crypto.market_cap }}</td>
             </tr>
           </tbody>
         </table>
@@ -136,6 +113,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 
 export default {
   setup() {
+    const COIN_GECKO = "https://www.coingecko.com/en/coins/";
     const cryptoStore = useCryptoStore();
     const pageData = ref([]);
     const sortKey = ref("name");
@@ -222,7 +200,7 @@ export default {
     };
 
     const openCoinLink = (crypto) => {
-      window.open(`https://www.coingecko.com/en/coins/${crypto.id}`, "_blank");
+      window.open(`${COIN_GECKO}${crypto.id}`, "_blank");
     };
 
     return {
@@ -275,11 +253,11 @@ export default {
 }
 
 .market-table th {
-  background-color: #f3f4f6;
+  background-color: var(--q-secondary);
 }
 
 .market-table tbody tr:hover {
-  background-color: #e9ecef;
+  background-color: var(--q-secondary);
 }
 
 .market-wrapper::-webkit-scrollbar {
