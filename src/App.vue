@@ -2,10 +2,20 @@
   <router-view />
 </template>
 
-<script setup>
-defineOptions({
-  name: "App",
-});
+<script>
+import { useCryptoStore } from "/src/stores/cryptoDataStore";
+
+export default {
+  setup() {
+    const cryptoStore = useCryptoStore();
+
+    if (!cryptoStore.cryptocurrencies.length) {
+      cryptoStore.fetchAllCryptocurrencies();
+    }
+
+    return {};
+  },
+};
 </script>
 
 <style>

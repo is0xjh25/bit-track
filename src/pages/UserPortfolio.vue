@@ -2,427 +2,403 @@
   <div class="portfolio-container">
     <h3>Your Portfolio</h3>
     <p>Manage your cryptocurrency portfolio here.</p>
-
-    <div class="user-info">
-      <p>
-        <strong>Hi, </strong>
-        <span style="color: var(--q-secondary)">{{ userEmail }}</span>
-      </p>
-    </div>
-
-    <div>
-      <div class="total-value">
-        <p>
-          <strong>Total Portfolio Value: </strong>
-          <span style="color: var(--q-secondary)">{{ totalValue }} USD</span>
-        </p>
-      </div>
-      <div class="button-container">
-        <q-btn
-          label="Add Asset"
-          color="primary"
-          icon="wallet"
-          @click="showEntryForm = true"
-        />
-      </div>
-
-      <div class="portfolio-wrapper">
-        <table class="portfolio-table">
-          <thead>
-            <tr>
-              <th @click="sortAssets('crypto_name')">Crypto</th>
-              <th @click="sortAssets('current_price')" v-show="!isSmallScreen">
-                Price
-              </th>
-              <th @click="sortAssets('quantity')" v-show="!isSmallScreen">
-                Quantity
-              </th>
-              <th @click="sortAssets('current_value')">Value</th>
-              <th v-show="!isSmallScreen">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(asset, index) in sortedAssets" :key="index">
-              <td>{{ asset.crypto_name }}</td>
-              <td v-show="!isSmallScreen">
-                {{ asset.current_price || "Loading..." }}
-              </td>
-              <td v-show="!isSmallScreen">
-                <input
-                  type="number"
-                  v-model.number="asset.quantity"
-                  :disabled="!asset.isEditing"
-                  :class="{
-                    'quantity-input': true,
-                    'primary-text inactive-input': !asset.isEditing,
-                  }"
-                  min="0"
-                  step="1"
-                />
-              </td>
-              <td>{{ asset.current_value || "Loading..." }}</td>
-              <td v-show="!isSmallScreen">
-                <div class="action-buttons">
-                  <q-btn
-                    v-if="!asset.isEditing"
-                    color="primary"
-                    icon="edit"
-                    @click="enableEditMode(asset)"
-                    class="edit-btn"
-                  />
-                  <q-btn
-                    v-else
-                    color="primary"
-                    icon="save"
-                    @click="saveQuantity(asset)"
-                    class="save-btn"
-                  />
-                  <q-btn
-                    color="negative"
-                    icon="delete"
-                    @click="removeAsset(asset.crypto_id)"
-                    class="remove-btn"
-                  />
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <q-dialog v-model="showEntryForm" persistent>
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Add New Asset</div>
-          </q-card-section>
-
-          <q-card-section class="q-pt-none popup-form">
-            <div class="form-row">
-              <label for="crypto">Select Crypto:</label>
-              <select v-model="newAsset.crypto_id" required>
-                <option
-                  v-for="crypto in availableCryptos"
-                  :value="crypto.id"
-                  :key="crypto.id"
-                >
-                  {{ crypto.name }}
-                </option>
-              </select>
-            </div>
-
-            <div class="form-row">
-              <label for="quantity">Quantity:</label>
-              <input
-                type="number"
-                v-model="newAsset.quantity"
-                min="0"
-                step="1"
-                required
-              />
-            </div>
-          </q-card-section>
-
-          <q-card-actions align="center">
-            <q-btn
-              label="Cancel"
-              color="negative"
-              @click="showEntryForm = false"
-            />
-            <q-btn label="Add" color="primary" @click="addAsset" />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
-    </div>
-
     <div v-if="isLoading" class="loading-message">
       Loading portfolio data...
     </div>
-    <div v-if="errorMessage" class="error-message">
+    <div v-else-if="errorMessage" class="error-message">
       {{ errorMessage }}
+    </div>
+    <div v-else>
+      <div class="user-info">
+        <p>
+          <strong>Hi, </strong>
+          <span style="color: var(--q-secondary)">{{ userEmail }}</span>
+        </p>
+      </div>
+
+      <div>
+        <div class="total-value">
+          <p>
+            <strong>Total Portfolio Value: </strong>
+            <span style="color: var(--q-secondary)">{{ totalValue }} USD</span>
+          </p>
+        </div>
+        <div class="button-container">
+          <q-btn
+            label="Add Asset"
+            color="primary"
+            icon="wallet"
+            @click="showEntryForm = true"
+          />
+        </div>
+        <div class="portfolio-wrapper">
+          <table class="portfolio-table">
+            <thead>
+              <tr>
+                <th @click="sortAssets('crypto_name')">Crypto</th>
+                <th @click="sortAssets('current_price')" v-show="isLargeScreen">
+                  Price
+                </th>
+                <th @click="sortAssets('quantity')" v-show="isLargeScreen">
+                  Quantity
+                </th>
+                <th @click="sortAssets('current_value')">Value</th>
+                <th v-show="isLargeScreen">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(asset, index) in sortedAssets" :key="index">
+                <td>{{ asset.crypto_name }}</td>
+                <td v-show="isLargeScreen">
+                  {{ asset.current_price || "Loading..." }}
+                </td>
+                <td v-show="isLargeScreen">
+                  <input
+                    type="number"
+                    v-model.number="asset.quantity"
+                    :disabled="!asset.isEditing"
+                    :class="{
+                      'quantity-input': true,
+                      'primary-text inactive-input': !asset.isEditing,
+                    }"
+                    min="0"
+                    step="1"
+                  />
+                </td>
+                <td>{{ asset.current_value || "Loading..." }}</td>
+                <td v-show="isLargeScreen">
+                  <div class="action-buttons">
+                    <q-btn
+                      v-if="!asset.isEditing"
+                      color="primary"
+                      icon="edit"
+                      @click="enableEditMode(asset)"
+                      class="edit-btn"
+                    />
+                    <q-btn
+                      v-else
+                      color="primary"
+                      icon="save"
+                      @click="saveQuantity(asset)"
+                      class="save-btn"
+                    />
+                    <q-btn
+                      color="negative"
+                      icon="delete"
+                      @click="removeAsset(asset.crypto_id)"
+                      class="remove-btn"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <q-dialog v-model="showEntryForm" persistent>
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Add New Asset</div>
+            </q-card-section>
+
+            <q-card-section class="q-pt-none popup-form">
+              <div class="form-row">
+                <label for="crypto">Select Crypto:</label>
+                <select v-model="newAsset.crypto_id" required>
+                  <option
+                    v-for="crypto in availableCryptos"
+                    :value="crypto.id"
+                    :key="crypto.id"
+                  >
+                    {{ crypto.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="quantity">Quantity:</label>
+                <input
+                  type="number"
+                  v-model="newAsset.quantity"
+                  min="0"
+                  step="1"
+                  required
+                />
+              </div>
+            </q-card-section>
+            <q-card-actions align="center">
+              <q-btn
+                label="Cancel"
+                color="negative"
+                @click="showEntryForm = false"
+              />
+              <q-btn label="Add" color="primary" @click="addAsset" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+      </div>
     </div>
     <p class="attribution-text">All crypto prices are provided by CoinGecko.</p>
   </div>
 </template>
 
 <script>
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { supabase } from "/src/supabaseClient.js";
-import axios from "axios";
-
-const COINGECKO_API = "https://api.coingecko.com/api/v3/simple/price";
+import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
 
 export default {
-  data() {
-    return {
-      userEmail: "",
-      assets: [],
-      cryptos: [],
-      newAsset: {
-        crypto_id: null,
-        quantity: 0,
-      },
-      showEntryForm: false,
-      totalValue: 0,
-      isSmallScreen: false,
-      sortColumn: "crypto_name",
-      sortOrder: "asc",
-      refreshInterval: null,
-      isLoading: true,
-      errorMessage: "",
+  setup() {
+    const cryptoStore = useCryptoStore();
+
+    // State
+    const userEmail = ref("");
+    const assets = ref([]);
+    const cryptos = ref([]);
+    const newAsset = ref({
+      crypto_id: null,
+      quantity: 0,
+    });
+    const showEntryForm = ref(false);
+    const sortColumn = ref("crypto_name");
+    const sortOrder = ref("asc");
+    const errorMessage = ref("");
+    const isLoading = ref(true);
+    const windowWidth = ref(window.innerWidth);
+    const isLargeScreen = computed(() => windowWidth.value > 768);
+
+    const updateWindowWidth = () => {
+      windowWidth.value = window.innerWidth;
     };
-  },
-  computed: {
-    availableCryptos() {
-      const existingCryptoIds = this.assets.map((asset) => asset.crypto_id);
-      return this.cryptos.filter(
+
+    onMounted(() => {
+      (async () => {
+        try {
+          isLoading.value = true; // Start loading
+          await fetchCryptos();
+          await checkLoginStatus();
+        } catch (error) {
+          console.error("Error during initialization:", error);
+        } finally {
+          isLoading.value = false; // End loading
+        }
+      })();
+
+      window.addEventListener("resize", updateWindowWidth);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("resize", updateWindowWidth);
+    });
+
+    // Computed Properties
+    const availableCryptos = computed(() => {
+      const existingCryptoIds = assets.value.map((asset) => asset.crypto_id);
+      return cryptos.value.filter(
         (crypto) => !existingCryptoIds.includes(crypto.id)
       );
-    },
-    sortedAssets() {
-      return [...this.assets].sort((a, b) => {
-        let modifier = this.sortOrder === "asc" ? 1 : -1;
-        if (a[this.sortColumn] < b[this.sortColumn]) return -1 * modifier;
-        if (a[this.sortColumn] > b[this.sortColumn]) return 1 * modifier;
+    });
+
+    const totalValue = computed(() => {
+      return assets.value
+        .reduce(
+          (total, asset) => total + parseFloat(asset.current_value || 0),
+          0
+        )
+        .toFixed(2);
+    });
+
+    const sortedAssets = computed(() => {
+      return [...assets.value].sort((a, b) => {
+        let modifier = sortOrder.value === "asc" ? 1 : -1;
+        if (a[sortColumn.value] < b[sortColumn.value]) return -1 * modifier;
+        if (a[sortColumn.value] > b[sortColumn.value]) return 1 * modifier;
         return 0;
       });
-    },
-  },
-  async created() {
-    this.checkScreenSize();
-    window.addEventListener("resize", this.checkScreenSize);
-    await this.checkLoginStatus();
-    await this.fetchCryptos();
-    this.refreshInterval = setInterval(() => {
-      this.fetchUserAssets();
-    }, 60000);
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        this.userEmail = session.user.email;
-        this.fetchUserAssets();
-      } else if (event === "SIGNED_OUT") {
-        this.userEmail = "";
-        this.assets = [];
-        this.totalValue = 0;
-      }
     });
-  },
-  beforeUnmount() {
-    window.removeEventListener("resize", this.checkScreenSize);
-    clearInterval(this.refreshInterval);
-  },
-  methods: {
-    checkScreenSize() {
-      this.isSmallScreen = window.innerWidth <= 600;
-    },
-    async checkLoginStatus() {
-      this.isLoading = true;
-      this.errorMessage = "";
+
+    // Methods
+    const checkLoginStatus = async () => {
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          this.userEmail = user.email;
-          await this.fetchUserAssets();
+          userEmail.value = user.email;
+          await fetchUserAssets();
         }
       } catch (error) {
-        this.errorMessage = "Error checking login status.";
-      } finally {
-        this.isLoading = false;
+        errorMessage.value = "Error checking login status.";
       }
-    },
-    async fetchUserAssets() {
-      this.isLoading = true;
-      this.errorMessage = "";
+    };
 
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError)
-          throw new Error("Error fetching user information from Supabase.");
-
-        const userId = user?.id;
-        if (!userId) {
-          this.errorMessage = "User not found. Please log in.";
-          this.isLoading = false;
-          return;
-        }
-
-        const { data: portfolioData, error: portfolioError } = await supabase
-          .from("Portfolio")
-          .select("quantity, crypto_id, Crypto(name)")
-          .eq("user_id", userId);
-
-        if (portfolioError)
-          throw new Error("Error fetching portfolio data from Supabase.");
-
-        const cryptoIds = portfolioData.map((item) =>
-          item.Crypto?.name.toLowerCase()
-        );
-
-        try {
-          const response = await axios.get(COINGECKO_API, {
-            params: { ids: cryptoIds.join(","), vs_currencies: "usd" },
-            timeout: 5000,
-          });
-
-          this.assets = portfolioData.map((item) => {
-            const name = item.Crypto?.name || "Unknown";
-            const quantity = item.quantity;
-            const currentPrice = response.data[name.toLowerCase()]?.usd || 0;
-            const currentValue = quantity * currentPrice;
-
-            return {
-              crypto_name: name,
-              quantity,
-              crypto_id: item.crypto_id,
-              current_price: currentPrice.toFixed(2),
-              current_value: currentValue.toFixed(2),
-              isEditing: false,
-            };
-          });
-
-          this.calculateTotalValue();
-        } catch (axiosError) {
-          if (!axiosError.response) {
-            console.log("!!!");
-            this.errorMessage =
-              "Network error: Unable to fetch data due to a CORS policy issue or no internet connection.";
-            this.isLoading = false;
-            console.log("!!!");
-          } else if (axiosError.code === "ECONNABORTED") {
-            this.errorMessage = "Request timed out. Please try again later.";
-          } else {
-            this.errorMessage = "Failed to load cryptocurrency data.";
-          }
-        }
-      } catch (error) {
-        this.errorMessage = error.message;
-        console.log(this.errorMessage);
-        this.isLoading = false;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    calculateTotalValue() {
-      this.totalValue = this.assets
-        .reduce((total, asset) => total + parseFloat(asset.current_value), 0)
-        .toFixed(2);
-    },
-    async fetchCryptos() {
-      this.isLoading = true;
-      this.errorMessage = "";
+    const fetchCryptos = async () => {
       try {
         const { data, error } = await supabase
           .from("Crypto")
           .select("id, name");
         if (error) {
-          this.errorMessage = "Error fetching cryptocurrencies.";
+          errorMessage.value = "Error fetching cryptocurrencies.";
         } else {
-          this.cryptos = data;
+          cryptos.value = data;
         }
       } catch (error) {
-        this.errorMessage = "Error fetching cryptocurrencies from Supabase.";
-      } finally {
-        this.isLoading = false;
+        errorMessage.value = "Error fetching cryptocurrencies from Supabase.";
       }
-    },
-    async addAsset() {
-      this.isLoading = true;
-      this.errorMessage = "";
+    };
+
+    const fetchUserAssets = async () => {
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        const userId = user?.id;
-        if (!userId) return;
+        if (!user) throw new Error("User not logged in.");
+
+        const { data: portfolioData, error: portfolioError } = await supabase
+          .from("Portfolio")
+          .select("quantity, crypto_id, Crypto(name)")
+          .eq("user_id", user.id);
+
+        if (portfolioError) throw new Error("Error fetching portfolio data.");
+
+        assets.value = portfolioData.map((item) => ({
+          crypto_name: item.Crypto?.name || "Unknown",
+          quantity: item.quantity,
+          crypto_id: item.crypto_id,
+          current_price: 0,
+          current_value: 0,
+          isEditing: false,
+        }));
+
+        updatePricesAndValues();
+      } catch (error) {
+        errorMessage.value = error.message;
+      }
+    };
+
+    const updatePricesAndValues = () => {
+      assets.value = assets.value.map((asset) => {
+        const currentPrice = cryptoStore.getPriceByName(asset.crypto_name) || 0;
+        const currentValue = asset.quantity * currentPrice;
+        return {
+          ...asset,
+          current_price: currentPrice.toFixed(2),
+          current_value: currentValue.toFixed(2),
+        };
+      });
+    };
+
+    const addAsset = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error("User not logged in.");
 
         const { error } = await supabase.from("Portfolio").insert({
-          user_id: userId,
-          crypto_id: this.newAsset.crypto_id,
-          quantity: this.newAsset.quantity,
+          user_id: user.id,
+          crypto_id: newAsset.value.crypto_id,
+          quantity: newAsset.value.quantity,
         });
 
         if (error) {
-          this.errorMessage = "Error adding new asset.";
+          errorMessage.value = "Error adding new asset.";
         } else {
-          this.fetchUserAssets();
-          this.newAsset = { crypto_id: null, quantity: 0 };
-          this.showEntryForm = false;
+          await fetchUserAssets();
+          newAsset.value = { crypto_id: null, quantity: 0 };
+          showEntryForm.value = false;
         }
       } catch (error) {
-        this.errorMessage = "Error adding new asset to Supabase.";
-      } finally {
-        this.isLoading = false;
+        errorMessage.value = error.message;
       }
-    },
-    enableEditMode(asset) {
+    };
+
+    const enableEditMode = (asset) => {
       asset.isEditing = true;
-    },
-    async saveQuantity(asset) {
+    };
+
+    const saveQuantity = async (asset) => {
       asset.isEditing = false;
-      await this.updateAssetQuantity(asset.crypto_id, asset.quantity);
-      this.fetchUserAssets();
-    },
-    async updateAssetQuantity(crypto_id, quantity) {
-      this.isLoading = true;
-      this.errorMessage = "";
+      await updateAssetQuantity(asset.crypto_id, asset.quantity);
+      fetchUserAssets();
+    };
+
+    const updateAssetQuantity = async (crypto_id, quantity) => {
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        const userId = user?.id;
-        if (!userId) return;
+        if (!user) throw new Error("User not logged in.");
 
         const { error } = await supabase
           .from("Portfolio")
           .update({ quantity })
-          .eq("user_id", userId)
+          .eq("user_id", user.id)
           .eq("crypto_id", crypto_id);
-        if (error) {
-          this.errorMessage = "Error updating asset quantity.";
-        }
+
+        if (error) throw new Error("Error updating asset quantity.");
       } catch (error) {
-        this.errorMessage = "Error updating asset quantity in Supabase.";
-      } finally {
-        this.isLoading = false;
+        errorMessage.value = error.message;
       }
-    },
-    async removeAsset(crypto_id) {
-      this.isLoading = true;
-      this.errorMessage = "";
+    };
+
+    const removeAsset = async (crypto_id) => {
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        const userId = user?.id;
-        if (!userId) return;
+        if (!user) throw new Error("User not logged in.");
 
         const { error } = await supabase
           .from("Portfolio")
           .delete()
-          .eq("user_id", userId)
+          .eq("user_id", user.id)
           .eq("crypto_id", crypto_id);
-        if (error) {
-          this.errorMessage = "Error removing asset.";
-        } else {
-          this.fetchUserAssets();
-        }
+
+        if (error) throw new Error("Error removing asset.");
+        fetchUserAssets();
       } catch (error) {
-        this.errorMessage = "Error removing asset from Supabase.";
-      } finally {
-        this.isLoading = false;
+        errorMessage.value = error.message;
       }
-    },
-    sortAssets(column) {
-      if (this.sortColumn === column) {
-        this.sortOrder = this.sortOrder === "asc" ? "desc" : "asc";
+    };
+
+    const sortAssets = (column) => {
+      if (sortColumn.value === column) {
+        sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
       } else {
-        this.sortColumn = column;
-        this.sortOrder = "asc";
+        sortColumn.value = column;
+        sortOrder.value = "asc";
       }
-    },
+    };
+
+    watch(
+      () => [cryptoStore.cryptocurrencies, cryptoStore.loading],
+      () => {
+        if (!cryptoStore.loading) {
+          updatePricesAndValues();
+        }
+      },
+      { deep: true }
+    );
+
+    return {
+      userEmail,
+      assets,
+      cryptos,
+      newAsset,
+      showEntryForm,
+      totalValue,
+      isLargeScreen,
+      availableCryptos,
+      sortedAssets,
+      addAsset,
+      enableEditMode,
+      saveQuantity,
+      updateAssetQuantity,
+      removeAsset,
+      sortAssets,
+      errorMessage,
+      isLoading,
+    };
   },
 };
 </script>
