@@ -68,25 +68,22 @@
                 <td>{{ asset.current_value || "Loading..." }}</td>
                 <td v-show="isLargeScreen">
                   <div class="action-buttons">
-                    <q-btn
+                    <CustomButton
                       v-if="!asset.isEditing"
-                      color="primary"
-                      icon="edit"
+                      type="edit"
+                      customClass="edit-btn"
                       @click="enableEditMode(asset)"
-                      class="edit-btn"
                     />
-                    <q-btn
+                    <CustomButton
                       v-else
-                      color="primary"
-                      icon="save"
+                      type="save"
+                      customClass="save-btn"
                       @click="saveQuantity(asset)"
-                      class="save-btn"
                     />
-                    <q-btn
-                      color="negative"
-                      icon="delete"
+                    <CustomButton
+                      type="delete"
+                      customClass="remove-btn"
                       @click="removeAsset(asset.crypto_id)"
-                      class="remove-btn"
                     />
                   </div>
                 </td>
@@ -145,8 +142,12 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { supabase } from "/src/supabaseClient.js";
 import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
+import CustomButton from "/src/components/CustomButton.vue";
 
 export default {
+  components: {
+    CustomButton,
+  },
   setup() {
     const cryptoStore = useCryptoStore();
 
@@ -414,6 +415,11 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: left;
+  overflow-y: auto;
+}
+
+.portfolio-container::-webkit-scrollbar {
+  display: none; 
 }
 
 .user-info,
