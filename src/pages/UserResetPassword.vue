@@ -109,6 +109,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../supabaseClient";
+import { useLogger } from "/src/composables/useLogger";
 
 export default {
   setup() {
@@ -118,6 +119,7 @@ export default {
     const isLoading = ref(false);
     const errorMessage = ref("");
     const successMessage = ref("");
+    const logger = useLogger();
 
     const checkAuth = async () => {
       const accessToken = router.currentRoute.value.query.access_token;
@@ -126,6 +128,7 @@ export default {
       if (!accessToken || !refreshToken) {
         errorMessage.value =
           "Invalid or expired link. Please request a new reset link.";
+        logger.error("Invalid or expired link.");
         setTimeout(() => {
           router.push("/login");
         }, 2000);
@@ -141,27 +144,26 @@ export default {
         if (error || !data) {
           errorMessage.value =
             "Session expired or invalid. Please request a new reset link.";
+          logger.error("Session expired or invalid.");
           setTimeout(() => {
             router.push("/login");
           }, 2000);
         }
       } catch (error) {
-        console.error("Error creating session:", error);
+        logger.error("Error setting session:", error.message);
         errorMessage.value = "An error occurred. Please try again later.";
       }
     };
 
-    onMounted(() => {
-      checkAuth();
-    });
-
     const handlePasswordUpdate = async () => {
       if (!newPassword.value || !confirmPassword.value) {
         errorMessage.value = "Both password fields are required.";
+        logger.warn("Password fields are required.");
         return;
       }
       if (newPassword.value !== confirmPassword.value) {
         errorMessage.value = "Passwords do not match.";
+        logger.warn("Passwords do not match.");
         return;
       }
 
@@ -176,6 +178,7 @@ export default {
           errorMessage.value =
             error.message ||
             "An error occurred while resetting the password. Please try again.";
+          logger.error("Error updating password:", error.message);
         } else {
           successMessage.value = "Password has been reset successfully!";
           setTimeout(() => {
@@ -183,9 +186,9 @@ export default {
           }, 2000);
         }
       } catch (error) {
-        console.error("Error updating password:", error);
         errorMessage.value =
           "An unexpected error occurred. Please try again later.";
+        logger.error("Error updating password:", error.message);
       } finally {
         isLoading.value = false;
       }
@@ -198,6 +201,10 @@ export default {
     const redirectToSignup = () => {
       router.push("/signup");
     };
+
+    onMounted(() => {
+      checkAuth();
+    });
 
     return {
       newPassword,

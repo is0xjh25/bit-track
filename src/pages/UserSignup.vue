@@ -100,63 +100,74 @@
 </template>
 
 <script>
+import { ref } from "vue";
 import { supabase } from "../supabaseClient";
-import { computed } from "vue";
-import { useQuasar } from "quasar";
+import { useRouter } from "vue-router";
+import { useLogger } from "src/composables/useLogger";
 
 export default {
-  data() {
-    return {
-      email: "",
-      password: "",
-      errorMessage: "",
-      successMessage: "",
-      isLoading: false,
-    };
-  },
   setup() {
-    const $q = useQuasar();
-    const isMobileOrTablet = computed(() => $q.screen.lt.md);
-    return { isMobileOrTablet };
-  },
-  methods: {
-    async handleSignUp() {
+    const router = useRouter();
+    const email = ref("");
+    const password = ref("");
+    const errorMessage = ref("");
+    const successMessage = ref("");
+    const isLoading = ref(false);
+    const logger = useLogger();
+
+    const handleSignUp = async () => {
       const { error } = await supabase.auth.signUp({
-        email: this.email,
-        password: this.password,
+        email: email.value,
+        password: password.value,
       });
 
       if (error) {
-        this.errorMessage = error.message;
+        errorMessage.value = error.message;
+        logger.error("Error signing up:", error.message);
       } else {
-        this.successMessage = "Sign-up successful! Redirecting to login...";
-        this.errorMessage = "";
+        successMessage.value = "Sign-up successful! Redirecting to login...";
+        errorMessage.value = "";
         setTimeout(() => {
-          this.$router.push("/login");
+          router.push("/login");
         }, 2000);
       }
-    },
-    redirectToLogin() {
-      this.$router.push("/login");
-    },
-    async handleResetPassword() {
-      if (!this.email) {
-        this.errorMessage = "Please enter your email to reset the password.";
+    };
+
+    const redirectToLogin = () => {
+      router.push("/login");
+    };
+
+    const handleResetPassword = async () => {
+      if (!email.value) {
+        errorMessage.value = "Please enter your email to reset the password.";
+        logger.warn("Email is required to reset the password.");
         return;
       }
 
-      this.isLoading = true;
-      const { error } = await supabase.auth.resetPasswordForEmail(this.email);
+      isLoading.value = true;
+      const { error } = await supabase.auth.resetPasswordForEmail(email.value);
 
       if (error) {
-        this.errorMessage = error.message;
+        errorMessage.value = error.message;
+        logger.error("Error sending password reset email:", error.message);
       } else {
-        this.successMessage = "Password reset email has been sent.";
-        this.errorMessage = "";
+        successMessage.value = "Password reset email has been sent.";
+        errorMessage.value = "";
       }
 
-      this.isLoading = false;
-    },
+      isLoading.value = false;
+    };
+
+    return {
+      email,
+      password,
+      errorMessage,
+      successMessage,
+      isLoading,
+      handleSignUp,
+      redirectToLogin,
+      handleResetPassword,
+    };
   },
 };
 </script>
