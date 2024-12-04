@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import axios from "axios";
+import { useLogger } from "/src/composables/UseLogger";
 
 export const useCryptoStore = defineStore("cryptoStore", () => {
   // State
@@ -11,6 +12,7 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
   const loading = ref(false);
   const errorMessage = ref(null);
   const itemsPerPage = ref(10);
+  const logger = useLogger();
   let autoRefreshInterval = null;
 
   // Actions
@@ -27,16 +29,16 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
       const isDataFresh =
         storedData &&
         storedTimestamp &&
-        new Date().getTime() - parseInt(storedTimestamp, 10) < 60000;
+        new Date().getTime() - parseInt(storedTimestamp, 10) < 120000;
 
       if (isDataFresh) {
-        // Use data from localStorage
         cryptocurrencies.value = JSON.parse(storedData);
         totalPages.value = Math.ceil(
           cryptocurrencies.value.length / itemsPerPage.value
         );
-        console.log("Using cached data:", new Date().toISOString());
+        logger.info("Fetched cached data:");
       } else {
+        logger.warn("Outdated cached data:");
         const response = await axios.get(COIN_GECKO, {
           params: {
             vs_currency: "usd",
@@ -60,14 +62,14 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
         totalPages.value = Math.ceil(
           cryptocurrencies.value.length / itemsPerPage.value
         );
-        console.log("Fetched new data:", new Date().toISOString());
+        logger.info("Fetched new data:", new Date().toISOString());
       }
       startAutoRefresh();
     } catch (error) {
       errorMessage.value =
         error.response?.data?.message ||
         "Failed to load cryptocurrency data. Please try again later.";
-      console.error("API Error:", error);
+      logger.error("API Error:", error);
     } finally {
       loading.value = false;
     }
@@ -77,14 +79,14 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
     stopAutoRefresh();
     autoRefreshInterval = setInterval(() => {
       fetchAllCryptocurrencies();
-      console.log("Auto Refresh:", new Date().toISOString());
+      logger.info("Auto Refresh:", new Date().toISOString());
     }, 60000);
   };
 
   const stopAutoRefresh = () => {
     if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval); // Clear the interval properly
-      autoRefreshInterval = null; // Reset the interval ID
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
     }
   };
 
@@ -99,7 +101,7 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
     const coin = cryptocurrencies.value.find(
       (crypto) => crypto.name.toLowerCase() === coinName.toLowerCase()
     );
-    return coin ? coin.current_price : null; // Return price or null if not found
+    return coin ? coin.current_price : null;
   };
 
   return {

@@ -110,6 +110,7 @@
 <script>
 import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useLogger } from "/src/composables/useLogger";
 
 export default {
   setup() {
@@ -121,6 +122,7 @@ export default {
     const currentPageInput = ref(cryptoStore.currentPage);
     const windowWidth = ref(window.innerWidth);
     const isLargeScreen = computed(() => windowWidth.value > 768);
+    const logger = useLogger();
 
     const updateWindowWidth = () => {
       windowWidth.value = window.innerWidth;
@@ -147,6 +149,7 @@ export default {
       ],
       () => {
         updatePageData();
+        logger.info("Cyrpto data updated");
         currentPageInput.value = cryptoStore.currentPage;
       }
     );
