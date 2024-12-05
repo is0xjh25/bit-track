@@ -1,6 +1,6 @@
 <template>
   <div class="portfolio-container">
-    <h3>Your Portfolio</h3>
+    <CusomtHeading>Your Portfolio</CusomtHeading>
     <p>Manage your cryptocurrency portfolio here.</p>
     <div v-if="isLoading" class="loading-message">
       Loading portfolio data...
@@ -143,11 +143,15 @@ import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { supabase } from "/src/supabaseClient.js";
 import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
 import CustomButton from "/src/components/CustomButton.vue";
+import CusomtHeading from "/src/components/CustomHeading.vue";
+
 
 export default {
   components: {
+    CusomtHeading,
     CustomButton,
   },
+
   setup() {
     const cryptoStore = useCryptoStore();
 

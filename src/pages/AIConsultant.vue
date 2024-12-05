@@ -1,6 +1,6 @@
 <template>
   <div class="recommendation-container">
-    <h3>AI Consultant</h3>
+    <CustomHeading>AI Consultant</CustomHeading>
     <p>Get AI-driven recommendations for your crypto portfolio.</p>
 
     <!-- Centered Button with Lightbulb Icon -->
@@ -40,8 +40,13 @@
 
 <script>
 import recommendations from "/src/mock/recommendations.json";
+import CusomtHeading from "/src/components/CustomHeading.vue";
+
 
 export default {
+  components: {
+    CustomHeading,
+  },
   data() {
     return {
       recommendations,
