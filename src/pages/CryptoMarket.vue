@@ -110,6 +110,7 @@
 <script>
 import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useLogger } from "/src/composables/useLogger";
 
 export default {
   setup() {
@@ -121,6 +122,7 @@ export default {
     const currentPageInput = ref(cryptoStore.currentPage);
     const windowWidth = ref(window.innerWidth);
     const isLargeScreen = computed(() => windowWidth.value > 768);
+    const logger = useLogger();
 
     const updateWindowWidth = () => {
       windowWidth.value = window.innerWidth;
@@ -138,18 +140,6 @@ export default {
     const updatePageData = () => {
       pageData.value = cryptoStore.getPageData(cryptoStore.currentPage);
     };
-
-    watch(
-      [
-        () => cryptoStore.cryptocurrencies,
-        () => cryptoStore.currentPage,
-        () => cryptoStore.loading,
-      ],
-      () => {
-        updatePageData();
-        currentPageInput.value = cryptoStore.currentPage;
-      }
-    );
 
     const sortedPageData = computed(() => {
       return [...pageData.value].sort((a, b) => {
@@ -202,6 +192,19 @@ export default {
     const openCoinLink = (crypto) => {
       window.open(`${COIN_GECKO}${crypto.id}`, "_blank");
     };
+
+    watch(
+      [
+        () => cryptoStore.cryptocurrencies,
+        () => cryptoStore.currentPage,
+        () => cryptoStore.loading,
+      ],
+      () => {
+        updatePageData();
+        logger.info("Cyrpto data updated");
+        currentPageInput.value = cryptoStore.currentPage;
+      }
+    );
 
     return {
       cryptoStore,
