@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import axios from "axios";
-import { useLogger } from "/src/composables/UseLogger";
+import { useLogger } from "src/composables/useLogger";
 
 export const useCryptoStore = defineStore("cryptoStore", () => {
   // State
