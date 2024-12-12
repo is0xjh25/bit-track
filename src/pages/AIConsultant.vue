@@ -40,7 +40,7 @@
 
 <script>
 import recommendations from "/src/mock/recommendations.json";
-import CusomtHeading from "/src/components/CustomHeading.vue";
+import CustomHeading from "/src/components/CustomHeading.vue";
 
 
 export default {
@@ -120,7 +120,7 @@ export default {
   list-style: none;
   padding: 0;
   margin: 0;
-}
+}n
 
 .recommendation-item {
   margin-bottom: 10px;
