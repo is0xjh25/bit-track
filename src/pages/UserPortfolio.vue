@@ -1,7 +1,10 @@
 <template>
   <div class="portfolio-container">
-    <CusomtHeading>Your Portfolio</CusomtHeading>
-    <p>Manage your cryptocurrency portfolio here.</p>
+    <CustomHeading>
+      <template #heading>Your Portfolio</template>
+      <template #subheading>Manage your cryptocurrency portfolio here.</template>
+    </CustomHeading>
+
     <div v-if="isLoading" class="loading-message">
       Loading portfolio data...
     </div>
@@ -91,47 +94,6 @@
             </tbody>
           </table>
         </div>
-        <q-dialog v-model="showEntryForm" persistent>
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Add New Asset</div>
-            </q-card-section>
-
-            <q-card-section class="q-pt-none popup-form">
-              <div class="form-row">
-                <label for="crypto">Select Crypto:</label>
-                <select v-model="newAsset.crypto_id" required>
-                  <option
-                    v-for="crypto in availableCryptos"
-                    :value="crypto.id"
-                    :key="crypto.id"
-                  >
-                    {{ crypto.name }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <label for="quantity">Quantity:</label>
-                <input
-                  type="number"
-                  v-model="newAsset.quantity"
-                  min="0"
-                  step="1"
-                  required
-                />
-              </div>
-            </q-card-section>
-            <q-card-actions align="center">
-              <q-btn
-                label="Cancel"
-                color="negative"
-                @click="showEntryForm = false"
-              />
-              <q-btn label="Add" color="primary" @click="addAsset" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
       </div>
     </div>
     <p class="attribution-text">All crypto prices are provided by CoinGecko.</p>
@@ -143,12 +105,12 @@ import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { supabase } from "/src/supabaseClient.js";
 import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
 import CustomButton from "/src/components/CustomButton.vue";
-import CusomtHeading from "/src/components/CustomHeading.vue";
+import CustomHeading from "/src/components/CustomHeading.vue";
 
 
 export default {
   components: {
-    CusomtHeading,
+    CustomHeading,
     CustomButton,
   },
 

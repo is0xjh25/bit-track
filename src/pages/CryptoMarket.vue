@@ -1,7 +1,9 @@
 <template>
   <div class="market-container">
-    <h3>Crypto Market</h3>
-    <p>Check current market prices for cryptocurrencies.</p>
+    <CustomHeading>
+    <template #heading>Crypto Market</template>
+    <template #subheading>Check current market prices for cryptocurrencies.</template>
+    </CustomHeading>
     <div v-if="cryptoStore.loading" class="loading-message">
       Loading market data...
     </div>
@@ -110,8 +112,13 @@
 <script>
 import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import CustomHeading from "/src/components/CustomHeading.vue";
+
 
 export default {
+  components: {
+    CustomHeading,
+  },
   setup() {
     const COIN_GECKO = "https://www.coingecko.com/en/coins/";
     const cryptoStore = useCryptoStore();

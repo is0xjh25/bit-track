@@ -1,9 +1,10 @@
 <template>
   <div class="recommendation-container">
-    <CustomHeading>AI Consultant</CustomHeading>
-    <p>Get AI-driven recommendations for your crypto portfolio.</p>
+    <CustomHeading>
+      <template #heading>AI Consultant</template>
+      <template #subheading>Get AI-driven recommendations for your crypto portfolio.</template>
+  </CustomHeading>
 
-    <!-- Centered Button with Lightbulb Icon -->
 
     <div class="recommendations-wrapper">
       <ul class="recommendations-list">
