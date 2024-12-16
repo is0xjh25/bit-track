@@ -1,30 +1,31 @@
 import { supabase } from "src/supabaseClient";
 
-export async function fetchUser(userId) {
-  const { data, error } = await supabase
-    .from("User")
-    .select("*")
-    .eq("id", userId);
+export async function fetchUser() {
+  try {
+    const { data: data, error: error } = await supabase.auth.getUser();
 
-  if (error) {
-    console.error("Error fetching user data:", error.message);
+    if (error) throw new Error("Error fetching user data.");
+
+    return data.user;
+  } catch (error) {
+    console.error("Unexpected error fetching user data:", error.message);
     return null;
   }
-
-  return data;
 }
 
 export const fetchPortfolio = async () => {
   try {
-    const { data: portfolioData, error: portfolioError } = await supabase
+    const { data: data, error: error } = await supabase
       .from("Portfolio")
       .select("quantity, crypto_id, Crypto(name)");
 
-    if (portfolioError) throw new Error("Error fetching portfolio data.");
+    if (error) throw new Error("Error fetching portfolio data.");
 
-    return portfolioData;
+    return data;
   } catch (error) {
-    errorMessage.value = error.message;
+    throw new Error(
+      error.message || "Unexpected error fetching portfolio data"
+    );
   }
 };
 
@@ -32,9 +33,7 @@ export const addPortfolio = async (params) => {
   const { crypto_id, quantity } = params;
 
   if (!crypto_id || !quantity) {
-    throw new Error(
-      "Missing required parameters: crypto_id, quantity, or user_id."
-    );
+    throw new Error("Missing required parameters: crypto_id, quantity.");
   }
 
   try {
@@ -58,9 +57,7 @@ export const updatePortfolio = async (params) => {
   const { crypto_id, quantity } = params;
 
   if (!crypto_id || !quantity) {
-    throw new Error(
-      "Missing required parameters: crypto_id, quantity, or user_id."
-    );
+    throw new Error("Missing required parameters: crypto_id, quantity");
   }
 
   try {
@@ -80,10 +77,9 @@ export const updatePortfolio = async (params) => {
 
 export const removePortfolio = async (params) => {
   const { crypto_id } = params;
+
   if (!crypto_id) {
-    throw new Error(
-      "Missing required parameters: crypto_id, quantity, or user_id."
-    );
+    throw new Error("Missing required parameters: crypto_id, quantity");
   }
 
   try {

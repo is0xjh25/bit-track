@@ -135,9 +135,14 @@
               <q-btn
                 label="Cancel"
                 color="negative"
-                @click="showEntryForm = false"
+                @click="handleCloseEntryForm"
               />
-              <q-btn label="Add" color="primary" @click="handleAddAsset" />
+              <q-btn
+                label="Add"
+                color="primary"
+                @click="handleAddAsset"
+                :disable="newAsset.quantity <= 0"
+              />
             </q-card-actions>
           </q-card>
         </q-dialog>
@@ -186,13 +191,15 @@ export default {
     const checkLoginStatus = async () => {
       try {
         const user = await fetchUser();
-        if (user) {
-          userEmail.value = user.email;
-          await fetchPortfolio(assets, errorMessage, cryptoStore);
-        } else {
+        if (!user) {
           throw new Error("User not logged in.");
         }
+
+        userEmail.value = user.email;
+
+        await getAssets();
       } catch (error) {
+        console.error("Error checking login status:", error.message);
         errorMessage.value = error.message || "Error checking login status.";
       }
     };
@@ -207,20 +214,17 @@ export default {
     };
 
     const getAssets = async () => {
+      const portfolio = await fetchPortfolio();
       try {
-        const { data: portfolioData, error: portfolioError } =
-          await fetchPortfolio();
-
-        if (portfolioError) throw new Error("Error fetching portfolio data.");
-
-        assets.value = portfolioData.map((item) => ({
+        assets.value = portfolio.map((item) => ({
           crypto_name: item.Crypto?.name || "Unknown",
-          quantity: item.quantity,
-          crypto_id: item.crypto_id,
+          quantity: item.quantity || 0,
+          crypto_id: item.crypto_id || null,
           current_price: 0,
           current_value: 0,
           isEditing: false,
         }));
+        updatePricesAndValues();
       } catch (error) {
         errorMessage.value = error.message;
       }
@@ -238,49 +242,41 @@ export default {
       });
     };
 
-    const handleAddAsset = async () => {
-      try {
-        const { error } = await addPortfolio(
-          newAsset.value.crypto_id,
-          newAsset.value.quantity
-        );
+    const handleCloseEntryForm = () => {
+      showEntryForm.value = false;
+      newAsset.value = { crypto_id: null, quantity: 0 };
+    };
 
-        if (error) {
-          errorMessage.value = "Error adding new asset.";
-        } else {
-          await getAssets();
-          newAsset.value = { crypto_id: null, quantity: 0 };
-          showEntryForm.value = false;
-        }
+    const handleAddAsset = async () => {
+      const params = {
+        crypto_id: newAsset.value.crypto_id,
+        quantity: newAsset.value.quantity,
+      };
+      try {
+        await addPortfolio(params);
+        getAssets();
+        handleCloseEntryForm;
       } catch (error) {
         errorMessage.value = error.message;
       }
     };
 
     const handleSaveQuantity = async (asset) => {
-      asset.isEditing = false;
-      await updateAssetQuantity(asset.crypto_id, asset.quantity);
-      getAssets();
-    };
-
-    const updateAssetQuantity = async (crypto_id, quantity) => {
       try {
-        const { error } = await updatePortfolio(crypto_id, quantity);
-        if (error) throw new Error("Error updating asset quantity.");
+        asset.isEditing = false;
+        const params = { crypto_id: asset.crypto_id, quantity: asset.quantity };
+        await updatePortfolio(params);
+        getAssets();
       } catch (error) {
         errorMessage.value = error.message;
       }
     };
 
     const handleRemoveAsset = async (crypto_id) => {
+      const params = { crypto_id: crypto_id };
       try {
-        const { error } = await removePortfolio(crypto_id);
-
-        if (error) {
-          throw new Error("Error removing asset.");
-        } else {
-          getAssets();
-        }
+        await removePortfolio(params);
+        getAssets();
       } catch (error) {
         errorMessage.value = error.message;
       }
@@ -346,6 +342,16 @@ export default {
       window.removeEventListener("resize", updateWindowWidth);
     });
 
+    watch(
+      availableCryptos,
+      (newList) => {
+        if (newList.length > 0 && !newAsset.value.crypto_id) {
+          newAsset.value.crypto_id = newList[0].id;
+        }
+      },
+      { immediate: true }
+    );
+
     // Watchers
     watch(
       () => [cryptoStore.cryptocurrencies, cryptoStore.loading],
@@ -373,8 +379,8 @@ export default {
       handleSortAssets,
       handleEditMode,
       handleSaveQuantity,
-      updateAssetQuantity,
       handleRemoveAsset,
+      handleCloseEntryForm,
     };
   },
 };

@@ -18,8 +18,6 @@ export async function fetchCryptoMarket(params = {}) {
       params: finalParams,
     });
 
-    console.log(response.data);
-
     return response.data;
   } catch (error) {
     console.error("Error fetching crypto market data:", error.message);
