@@ -35,14 +35,20 @@
           <table class="portfolio-table">
             <thead>
               <tr>
-                <th @click="sortAssets('crypto_name')">Crypto</th>
-                <th @click="sortAssets('current_price')" v-show="isLargeScreen">
+                <th @click="handleSortAssets('crypto_name')">Crypto</th>
+                <th
+                  @click="handleSortAssets('current_price')"
+                  v-show="isLargeScreen"
+                >
                   Price
                 </th>
-                <th @click="sortAssets('quantity')" v-show="isLargeScreen">
+                <th
+                  @click="handleSortAssets('quantity')"
+                  v-show="isLargeScreen"
+                >
                   Quantity
                 </th>
-                <th @click="sortAssets('current_value')">Value</th>
+                <th @click="handleSortAssets('current_value')">Value</th>
                 <th v-show="isLargeScreen">Actions</th>
               </tr>
             </thead>
@@ -72,20 +78,20 @@
                       v-if="!asset.isEditing"
                       color="primary"
                       icon="edit"
-                      @click="enableEditMode(asset)"
+                      @click="handleEditMode(asset)"
                       class="edit-btn"
                     />
                     <q-btn
                       v-else
                       color="primary"
                       icon="save"
-                      @click="saveQuantity(asset)"
+                      @click="handleSaveQuantity(asset)"
                       class="save-btn"
                     />
                     <q-btn
                       color="negative"
                       icon="delete"
-                      @click="removeAsset(asset.crypto_id)"
+                      @click="handleRemoveAsset(asset.crypto_id)"
                       class="remove-btn"
                     />
                   </div>
@@ -129,9 +135,14 @@
               <q-btn
                 label="Cancel"
                 color="negative"
-                @click="showEntryForm = false"
+                @click="handleCloseEntryForm"
               />
-              <q-btn label="Add" color="primary" @click="addAsset" />
+              <q-btn
+                label="Add"
+                color="primary"
+                @click="handleAddAsset"
+                :disable="newAsset.quantity <= 0"
+              />
             </q-card-actions>
           </q-card>
         </q-dialog>
@@ -143,9 +154,15 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { supabase } from "/src/supabaseClient.js";
-import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
-import { useLogger } from "/src/composables/useLogger.js";
+import { useCryptoStore } from "src/stores/cryptoDataStore.js";
+import {
+  fetchUser,
+  fetchPortfolio,
+  addPortfolio,
+  removePortfolio,
+  updatePortfolio,
+  fetchCryptoList,
+} from "src/services/UseUserAPI";
 
 export default {
   setup() {
@@ -164,11 +181,121 @@ export default {
     const isLoading = ref(true);
     const windowWidth = ref(window.innerWidth);
     const isLargeScreen = computed(() => windowWidth.value > 768);
+
+    // Methods
     const updateWindowWidth = () => {
       windowWidth.value = window.innerWidth;
     };
     const logger = useLogger();
 
+    const checkLoginStatus = async () => {
+      try {
+        const user = await fetchUser();
+        if (!user) {
+          throw new Error("User not logged in.");
+        }
+
+        userEmail.value = user.email;
+
+        await getAssets();
+      } catch (error) {
+        console.error("Error checking login status:", error.message);
+        errorMessage.value = error.message || "Error checking login status.";
+      }
+    };
+
+    const getCryptoList = async () => {
+      try {
+        cryptos.value = await fetchCryptoList();
+      } catch (error) {
+        errorMessage.value =
+          error.message || "Error fetching cryptocurrencies.";
+      }
+    };
+
+    const getAssets = async () => {
+      const portfolio = await fetchPortfolio();
+      try {
+        assets.value = portfolio.map((item) => ({
+          crypto_name: item.Crypto?.name || "Unknown",
+          quantity: item.quantity || 0,
+          crypto_id: item.crypto_id || null,
+          current_price: 0,
+          current_value: 0,
+          isEditing: false,
+        }));
+        updatePricesAndValues();
+      } catch (error) {
+        errorMessage.value = error.message;
+      }
+    };
+
+    const updatePricesAndValues = () => {
+      assets.value = assets.value.map((asset) => {
+        const currentPrice = cryptoStore.getPriceByName(asset.crypto_name) || 0;
+        const currentValue = asset.quantity * currentPrice;
+        return {
+          ...asset,
+          current_price: currentPrice.toFixed(2),
+          current_value: currentValue.toFixed(2),
+        };
+      });
+    };
+
+    const handleCloseEntryForm = () => {
+      showEntryForm.value = false;
+      newAsset.value = { crypto_id: null, quantity: 0 };
+    };
+
+    const handleAddAsset = async () => {
+      const params = {
+        crypto_id: newAsset.value.crypto_id,
+        quantity: newAsset.value.quantity,
+      };
+      try {
+        await addPortfolio(params);
+        getAssets();
+        handleCloseEntryForm;
+      } catch (error) {
+        errorMessage.value = error.message;
+      }
+    };
+
+    const handleSaveQuantity = async (asset) => {
+      try {
+        asset.isEditing = false;
+        const params = { crypto_id: asset.crypto_id, quantity: asset.quantity };
+        await updatePortfolio(params);
+        getAssets();
+      } catch (error) {
+        errorMessage.value = error.message;
+      }
+    };
+
+    const handleRemoveAsset = async (crypto_id) => {
+      const params = { crypto_id: crypto_id };
+      try {
+        await removePortfolio(params);
+        getAssets();
+      } catch (error) {
+        errorMessage.value = error.message;
+      }
+    };
+
+    const handleEditMode = (asset) => {
+      asset.isEditing = true;
+    };
+
+    const handleSortAssets = (column) => {
+      if (sortColumn.value === column) {
+        sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+      } else {
+        sortColumn.value = column;
+        sortOrder.value = "asc";
+      }
+    };
+
+    // Computed Properties
     const availableCryptos = computed(() => {
       const existingCryptoIds = assets.value.map((asset) => asset.crypto_id);
       return cryptos.value.filter(
@@ -194,173 +321,15 @@ export default {
       });
     });
 
-    const checkLoginStatus = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          userEmail.value = user.email;
-          await fetchUserAssets();
-        }
-      } catch (error) {
-        errorMessage.value = "Error checking login status.";
-        logger.error("Error checking login status:", error.message);
-      }
-    };
-
-    const fetchCryptos = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("Crypto")
-          .select("id, name");
-        if (error) {
-          errorMessage.value = "Error fetching cryptocurrencies.";
-        } else {
-          cryptos.value = data;
-        }
-      } catch (error) {
-        errorMessage.value = "Error fetching cryptocurrencies from Supabase.";
-        logger.error("Error fetching cryptocurrencies:", error.message);
-      }
-    };
-
-    const fetchUserAssets = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("User not logged in.");
-
-        const { data: portfolioData, error: portfolioError } = await supabase
-          .from("Portfolio")
-          .select("quantity, crypto_id, Crypto(name)")
-          .eq("user_id", user.id);
-
-        if (portfolioError) throw new Error("Error fetching portfolio data.");
-
-        assets.value = portfolioData.map((item) => ({
-          crypto_name: item.Crypto?.name || "Unknown",
-          quantity: item.quantity,
-          crypto_id: item.crypto_id,
-          current_price: 0,
-          current_value: 0,
-          isEditing: false,
-        }));
-
-        updatePricesAndValues();
-      } catch (error) {
-        errorMessage.value = error.message;
-        logger.error("Error fetching user assets:", error.message);
-      }
-    };
-
-    const updatePricesAndValues = () => {
-      assets.value = assets.value.map((asset) => {
-        const currentPrice = cryptoStore.getPriceByName(asset.crypto_name) || 0;
-        const currentValue = asset.quantity * currentPrice;
-        return {
-          ...asset,
-          current_price: currentPrice.toFixed(2),
-          current_value: currentValue.toFixed(2),
-        };
-      });
-    };
-
-    const addAsset = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("User not logged in.");
-
-        const { error } = await supabase.from("Portfolio").insert({
-          user_id: user.id,
-          crypto_id: newAsset.value.crypto_id,
-          quantity: newAsset.value.quantity,
-        });
-
-        if (error) {
-          errorMessage.value = "Error adding new asset.";
-        } else {
-          await fetchUserAssets();
-          newAsset.value = { crypto_id: null, quantity: 0 };
-          showEntryForm.value = false;
-        }
-      } catch (error) {
-        errorMessage.value = error.message;
-        logger.error("Error adding new asset:", error.message);
-      }
-    };
-
-    const enableEditMode = (asset) => {
-      asset.isEditing = true;
-    };
-
-    const saveQuantity = async (asset) => {
-      asset.isEditing = false;
-      await updateAssetQuantity(asset.crypto_id, asset.quantity);
-      fetchUserAssets();
-    };
-
-    const updateAssetQuantity = async (crypto_id, quantity) => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("User not logged in.");
-
-        const { error } = await supabase
-          .from("Portfolio")
-          .update({ quantity })
-          .eq("user_id", user.id)
-          .eq("crypto_id", crypto_id);
-
-        if (error) throw new Error("Error updating asset quantity.");
-      } catch (error) {
-        errorMessage.value = error.message;
-        logger.error("Error updating asset quantity:", error.message);
-      }
-    };
-
-    const removeAsset = async (crypto_id) => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("User not logged in.");
-
-        const { error } = await supabase
-          .from("Portfolio")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("crypto_id", crypto_id);
-
-        if (error) throw new Error("Error removing asset.");
-        fetchUserAssets();
-      } catch (error) {
-        errorMessage.value = error.message;
-        logger.error("Error removing asset:", error.message);
-      }
-    };
-
-    const sortAssets = (column) => {
-      if (sortColumn.value === column) {
-        sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-      } else {
-        sortColumn.value = column;
-        sortOrder.value = "asc";
-      }
-    };
-
+    // Lifecycle Hooks
     onMounted(() => {
       (async () => {
         try {
           isLoading.value = true;
-          await fetchCryptos();
+          await getCryptoList();
           await checkLoginStatus();
         } catch (error) {
-          logger.error("Error during initialization:", error);
+          console.error("Error during initialization:", error);
         } finally {
           isLoading.value = false;
         }
@@ -373,6 +342,17 @@ export default {
       window.removeEventListener("resize", updateWindowWidth);
     });
 
+    watch(
+      availableCryptos,
+      (newList) => {
+        if (newList.length > 0 && !newAsset.value.crypto_id) {
+          newAsset.value.crypto_id = newList[0].id;
+        }
+      },
+      { immediate: true }
+    );
+
+    // Watchers
     watch(
       () => [cryptoStore.cryptocurrencies, cryptoStore.loading],
       () => {
@@ -393,14 +373,14 @@ export default {
       isLargeScreen,
       availableCryptos,
       sortedAssets,
-      addAsset,
-      enableEditMode,
-      saveQuantity,
-      updateAssetQuantity,
-      removeAsset,
-      sortAssets,
       errorMessage,
       isLoading,
+      handleAddAsset,
+      handleSortAssets,
+      handleEditMode,
+      handleSaveQuantity,
+      handleRemoveAsset,
+      handleCloseEntryForm,
     };
   },
 };

@@ -1,11 +1,10 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import axios from "axios";
 import { useLogger } from "src/composables/useLogger";
+import { fetchCryptoMarket } from "src/services/UseMarketAPI";
 
 export const useCryptoStore = defineStore("cryptoStore", () => {
   // State
-  const COIN_GECKO = "https://api.coingecko.com/api/v3/coins/markets";
   const cryptocurrencies = ref([]);
   const currentPage = ref(1);
   const totalPages = ref(1);
@@ -25,31 +24,47 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
       const storedTimestamp = localStorage.getItem(
         "cryptocurrencies_timestamp"
       );
+      const DATA_FRESHNESS_DURATION = 60000; // 1 minute
+
+      let parsedData = null;
+
+      // Safely parse cached data
+      try {
+        parsedData = storedData ? JSON.parse(storedData) : null;
+      } catch (e) {
+        logger.error("Error parsing cached data:", e.message);
+        localStorage.removeItem("cryptocurrencies"); // Clear corrupted data
+      }
 
       const isDataFresh =
-        storedData &&
+        parsedData &&
         storedTimestamp &&
-        new Date().getTime() - parseInt(storedTimestamp, 10) < 120000;
+        new Date().getTime() - parseInt(storedTimestamp, 10) <
+          DATA_FRESHNESS_DURATION;
 
       if (isDataFresh) {
-        cryptocurrencies.value = JSON.parse(storedData);
+        cryptocurrencies.value = parsedData;
         totalPages.value = Math.ceil(
           cryptocurrencies.value.length / itemsPerPage.value
         );
         logger.info("Fetched cached data:");
       } else {
         logger.warn("Outdated cached data:");
-        const response = await axios.get(COIN_GECKO, {
-          params: {
-            vs_currency: "usd",
-            order: "market_cap_desc",
-            per_page: 250,
-            page: 1,
-          },
+        const response = await fetchCryptoMarket({
+          per_page: 250,
+          page: 1,
+          vs_currency: "usd",
         });
 
-        cryptocurrencies.value = response.data;
+        // Validate response
 
+        if (!response || !Array.isArray(response)) {
+          throw new Error("Invalid API response format.");
+        }
+
+        cryptocurrencies.value = response;
+
+        // Cache data in localStorage
         localStorage.setItem(
           "cryptocurrencies",
           JSON.stringify(cryptocurrencies.value)
@@ -64,14 +79,14 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
         );
         logger.info("Fetched new data:", new Date().toISOString());
       }
-      startAutoRefresh();
     } catch (error) {
       errorMessage.value =
-        error.response?.data?.message ||
+        error.message ||
         "Failed to load cryptocurrency data. Please try again later.";
       logger.error("API Error:", error);
     } finally {
       loading.value = false;
+      startAutoRefresh();
     }
   };
 
