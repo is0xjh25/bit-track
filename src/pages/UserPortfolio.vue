@@ -155,6 +155,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useCryptoStore } from "src/stores/cryptoDataStore.js";
+import { useLogger } from "src/composables/useLogger";
 import {
   fetchUser,
   fetchPortfolio,
@@ -181,12 +182,12 @@ export default {
     const isLoading = ref(true);
     const windowWidth = ref(window.innerWidth);
     const isLargeScreen = computed(() => windowWidth.value > 768);
+    const logger = useLogger();
 
     // Methods
     const updateWindowWidth = () => {
       windowWidth.value = window.innerWidth;
     };
-    const logger = useLogger();
 
     const checkLoginStatus = async () => {
       try {
@@ -199,7 +200,7 @@ export default {
 
         await getAssets();
       } catch (error) {
-        console.error("Error checking login status:", error.message);
+        logger.error("Error checking login status:", error.message);
         errorMessage.value = error.message || "Error checking login status.";
       }
     };
@@ -255,7 +256,7 @@ export default {
       try {
         await addPortfolio(params);
         getAssets();
-        handleCloseEntryForm;
+        handleCloseEntryForm();
       } catch (error) {
         errorMessage.value = error.message;
       }
@@ -329,7 +330,7 @@ export default {
           await getCryptoList();
           await checkLoginStatus();
         } catch (error) {
-          console.error("Error during initialization:", error);
+          logger.error("Error during initialization:", error);
         } finally {
           isLoading.value = false;
         }
