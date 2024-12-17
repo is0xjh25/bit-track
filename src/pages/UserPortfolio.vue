@@ -145,12 +145,11 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { supabase } from "/src/supabaseClient.js";
 import { useCryptoStore } from "/src/stores/cryptoDataStore.js";
+import { useLogger } from "/src/composables/useLogger.js";
 
 export default {
   setup() {
     const cryptoStore = useCryptoStore();
-
-    // State
     const userEmail = ref("");
     const assets = ref([]);
     const cryptos = ref([]);
@@ -165,32 +164,11 @@ export default {
     const isLoading = ref(true);
     const windowWidth = ref(window.innerWidth);
     const isLargeScreen = computed(() => windowWidth.value > 768);
-
     const updateWindowWidth = () => {
       windowWidth.value = window.innerWidth;
     };
+    const logger = useLogger();
 
-    onMounted(() => {
-      (async () => {
-        try {
-          isLoading.value = true; // Start loading
-          await fetchCryptos();
-          await checkLoginStatus();
-        } catch (error) {
-          console.error("Error during initialization:", error);
-        } finally {
-          isLoading.value = false; // End loading
-        }
-      })();
-
-      window.addEventListener("resize", updateWindowWidth);
-    });
-
-    onUnmounted(() => {
-      window.removeEventListener("resize", updateWindowWidth);
-    });
-
-    // Computed Properties
     const availableCryptos = computed(() => {
       const existingCryptoIds = assets.value.map((asset) => asset.crypto_id);
       return cryptos.value.filter(
@@ -216,7 +194,6 @@ export default {
       });
     });
 
-    // Methods
     const checkLoginStatus = async () => {
       try {
         const {
@@ -228,6 +205,7 @@ export default {
         }
       } catch (error) {
         errorMessage.value = "Error checking login status.";
+        logger.error("Error checking login status:", error.message);
       }
     };
 
@@ -243,6 +221,7 @@ export default {
         }
       } catch (error) {
         errorMessage.value = "Error fetching cryptocurrencies from Supabase.";
+        logger.error("Error fetching cryptocurrencies:", error.message);
       }
     };
 
@@ -272,6 +251,7 @@ export default {
         updatePricesAndValues();
       } catch (error) {
         errorMessage.value = error.message;
+        logger.error("Error fetching user assets:", error.message);
       }
     };
 
@@ -309,6 +289,7 @@ export default {
         }
       } catch (error) {
         errorMessage.value = error.message;
+        logger.error("Error adding new asset:", error.message);
       }
     };
 
@@ -338,6 +319,7 @@ export default {
         if (error) throw new Error("Error updating asset quantity.");
       } catch (error) {
         errorMessage.value = error.message;
+        logger.error("Error updating asset quantity:", error.message);
       }
     };
 
@@ -358,6 +340,7 @@ export default {
         fetchUserAssets();
       } catch (error) {
         errorMessage.value = error.message;
+        logger.error("Error removing asset:", error.message);
       }
     };
 
@@ -369,6 +352,26 @@ export default {
         sortOrder.value = "asc";
       }
     };
+
+    onMounted(() => {
+      (async () => {
+        try {
+          isLoading.value = true;
+          await fetchCryptos();
+          await checkLoginStatus();
+        } catch (error) {
+          logger.error("Error during initialization:", error);
+        } finally {
+          isLoading.value = false;
+        }
+      })();
+
+      window.addEventListener("resize", updateWindowWidth);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("resize", updateWindowWidth);
+    });
 
     watch(
       () => [cryptoStore.cryptocurrencies, cryptoStore.loading],

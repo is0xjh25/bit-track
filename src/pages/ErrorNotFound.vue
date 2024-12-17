@@ -23,18 +23,22 @@
 </template>
 
 <script setup>
-defineOptions({
-  name: "ErrorNotFound",
+import { onMounted } from "vue";
+import { useLogger } from "/src/composables/useLogger";
+
+const logger = useLogger();
+onMounted(() => {
+  logger.error("404 Not Found");
 });
 </script>
 
 <style scoped>
 .error-code {
-  font-size: calc(10vw + 10vh); /* Adjusts with screen size */
+  font-size: calc(10vw + 10vh);
 }
 @media (max-width: 600px) {
   .error-code {
-    font-size: 20vh; /* Smaller font size on mobile screens */
+    font-size: 20vh;
   }
 }
 </style>

@@ -2,9 +2,6 @@
   <div class="recommendation-container">
     <h3>AI Consultant</h3>
     <p>Get AI-driven recommendations for your crypto portfolio.</p>
-
-    <!-- Centered Button with Lightbulb Icon -->
-
     <div class="recommendations-wrapper">
       <ul class="recommendations-list">
         <li
@@ -39,22 +36,31 @@
 </template>
 
 <script>
+import { ref } from "vue";
+import { useLogger } from "src/composables/useLogger";
 import recommendations from "/src/mock/recommendations.json";
 
 export default {
-  data() {
+  setup() {
+    const recommendationsList = ref(recommendations);
+    const expandedIndex = ref(null);
+    const logger = useLogger();
+
+    const toggleRecommendation = (index) => {
+      expandedIndex.value = expandedIndex.value === index ? null : index;
+    };
+
+    const performAnalysis = () => {
+      logger.info("Performing portfolio analysis...");
+    };
+
     return {
       recommendations,
-      expandedIndex: null,
+      recommendationsList,
+      expandedIndex,
+      toggleRecommendation,
+      performAnalysis,
     };
-  },
-  methods: {
-    toggleRecommendation(index) {
-      this.expandedIndex = this.expandedIndex === index ? null : index;
-    },
-    performAnalysis() {
-      console.log("Performing portfolio analysis...");
-    },
   },
 };
 </script>
