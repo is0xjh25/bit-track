@@ -156,12 +156,13 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useCryptoStore } from "src/stores/cryptoDataStore.js";
 import { useLogger } from "src/composables/useLogger";
+import { validateParams } from "src/utils/Validator";
 import {
   fetchUser,
-  fetchPortfolio,
-  addPortfolio,
-  removePortfolio,
-  updatePortfolio,
+  fetchAsset,
+  addAsset,
+  removeAsset,
+  updateAsset,
   fetchCryptoList,
 } from "src/services/UseUserAPI";
 
@@ -193,6 +194,7 @@ export default {
       try {
         const user = await fetchUser();
         if (!user) {
+          logger.error("User not logged in.");
           throw new Error("User not logged in.");
         }
 
@@ -201,7 +203,7 @@ export default {
         await getAssets();
       } catch (error) {
         logger.error("Error checking login status:", error.message);
-        errorMessage.value = error.message || "Error checking login status.";
+        errorMessage.value = "Error: Checking login status.";
       }
     };
 
@@ -209,15 +211,15 @@ export default {
       try {
         cryptos.value = await fetchCryptoList();
       } catch (error) {
-        errorMessage.value =
-          error.message || "Error fetching cryptocurrencies.";
+        logger.error("Error fetching cryptocurrencies:", error.message);
+        errorMessage.value = "Error: Fetching cryptocurrencies.";
       }
     };
 
     const getAssets = async () => {
-      const portfolio = await fetchPortfolio();
+      const asset = await fetchAsset();
       try {
-        assets.value = portfolio.map((item) => ({
+        assets.value = asset.map((item) => ({
           crypto_name: item.Crypto?.name || "Unknown",
           quantity: item.quantity || 0,
           crypto_id: item.crypto_id || null,
@@ -227,7 +229,8 @@ export default {
         }));
         updatePricesAndValues();
       } catch (error) {
-        errorMessage.value = error.message;
+        logger.error("Error fetching assets:", error.message);
+        errorMessage.value = "Error: Fetching assets.";
       }
     };
 
@@ -245,7 +248,7 @@ export default {
 
     const handleCloseEntryForm = () => {
       showEntryForm.value = false;
-      newAsset.value = { crypto_id: null, quantity: 0 };
+      newAsset.value.quantity = 0;
     };
 
     const handleAddAsset = async () => {
@@ -254,32 +257,36 @@ export default {
         quantity: newAsset.value.quantity,
       };
       try {
-        await addPortfolio(params);
+        await addAsset(validateParams("addAsset", params));
         getAssets();
         handleCloseEntryForm();
       } catch (error) {
-        errorMessage.value = error.message;
+        logger.error("Error adding asset:", error.message);
+        errorMessage.value = "Error: Adding asset.";
       }
     };
 
     const handleSaveQuantity = async (asset) => {
       try {
-        asset.isEditing = false;
         const params = { crypto_id: asset.crypto_id, quantity: asset.quantity };
-        await updatePortfolio(params);
+        await updateAsset(validateParams("updateAsset", params));
         getAssets();
       } catch (error) {
-        errorMessage.value = error.message;
+        logger.error("Error updating asset:", error.message);
+        errorMessage.value = "Error: Updating asset.";
+      } finally {
+        asset.isEditing = false;
       }
     };
 
     const handleRemoveAsset = async (crypto_id) => {
       const params = { crypto_id: crypto_id };
       try {
-        await removePortfolio(params);
+        await removeAsset(validateParams("removeAsset", params));
         getAssets();
       } catch (error) {
-        errorMessage.value = error.message;
+        logger.error("Error removing asset:", error.message);
+        errorMessage.value = "Error: Removing asset.";
       }
     };
 
@@ -346,14 +353,13 @@ export default {
     watch(
       availableCryptos,
       (newList) => {
-        if (newList.length > 0 && !newAsset.value.crypto_id) {
+        if (newList.length > 0) {
           newAsset.value.crypto_id = newList[0].id;
         }
       },
       { immediate: true }
     );
 
-    // Watchers
     watch(
       () => [cryptoStore.cryptocurrencies, cryptoStore.loading],
       () => {

@@ -99,9 +99,10 @@
 
 <script>
 import { ref } from "vue";
-import { supabase } from "../supabaseClient";
 import { useRouter } from "vue-router";
-import { useLogger } from "../composables/useLogger";
+import { useLogger } from "src/composables/useLogger";
+import { validateParams } from "src/utils/Validator";
+import { signInWithPassword, resetPassword } from "src/services/UseAuthAPI";
 
 export default {
   setup() {
@@ -114,21 +115,27 @@ export default {
     const logger = useLogger();
 
     const handleLogin = async () => {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.value,
-        password: password.value,
-      });
+      isLoading.value = true;
+      errorMessage.value = "";
+      successMessage.value = "";
 
-      if (error) {
-        errorMessage.value = error.message;
-        logger.error("Error logging in:", error.message);
-      } else {
+      try {
+        const params = validateParams("signInWithPassword", {
+          email: email.value,
+          password: password.value,
+        });
+
+        successMessage.value = await signInWithPassword(params);
         logger.info("User logged in successfully.");
-        successMessage.value = "Login successful! Redirecting to dashboard...";
-        errorMessage.value = "";
+
         setTimeout(() => {
           router.push("/portfolio");
         }, 2000);
+      } catch (error) {
+        errorMessage.value = error.message;
+        logger.error("Error in handleLogin:", error.message);
+      } finally {
+        isLoading.value = false;
       }
     };
 
@@ -137,23 +144,21 @@ export default {
     };
 
     const handleResetPassword = async () => {
-      if (!email.value) {
-        errorMessage.value = "Please enter your email to reset the password.";
-        return;
-      }
-
       isLoading.value = true;
-      const { error } = await supabase.auth.resetPasswordForEmail(email.value);
+      errorMessage.value = "";
+      successMessage.value = "";
 
-      if (error) {
+      try {
+        const params = validateParams("resetPassword", { email: email.value });
+
+        const message = await resetPassword(params);
+        successMessage.value = message;
+      } catch (error) {
         errorMessage.value = error.message;
-        logger.error("Error sending password reset email:", error.message);
-      } else {
-        successMessage.value = "Password reset email has been sent.";
-        errorMessage.value = "";
+        logger.error("Error in handleResetPassword:", error.message);
+      } finally {
+        isLoading.value = false;
       }
-
-      isLoading.value = false;
     };
 
     return {

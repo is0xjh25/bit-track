@@ -1,102 +1,76 @@
 import { supabase } from "src/supabaseClient";
+import { validateParams } from "src/utils/Validator";
 
 export async function fetchUser() {
   try {
     const { data: data, error: error } = await supabase.auth.getUser();
 
-    if (error) throw new Error("Error fetching user data.");
+    if (error) throw new Error("Error fetching user data: " + error.message);
 
     return data.user;
   } catch (error) {
-    console.error("Unexpected error fetching user data:", error.message);
-    return null;
+    throw error;
   }
 }
 
-export const fetchPortfolio = async () => {
+export const fetchAsset = async () => {
   try {
     const { data: data, error: error } = await supabase
       .from("Portfolio")
       .select("quantity, crypto_id, Crypto(name)");
 
-    if (error) throw new Error("Error fetching portfolio data.");
+    if (error)
+      throw new Error("Error fetching portfolio data: " + error.message);
 
     return data;
   } catch (error) {
-    throw new Error(
-      error.message || "Unexpected error fetching portfolio data"
-    );
+    throw error;
   }
 };
 
-export const addPortfolio = async (params) => {
-  const { crypto_id, quantity } = params;
-
-  if (!crypto_id || !quantity) {
-    throw new Error("Missing required parameters: crypto_id, quantity.");
-  }
-
+export const addAsset = async (params) => {
   try {
+    const { crypto_id, quantity } = validateParams("addAsset", params);
+
     const { error } = await supabase.from("Portfolio").insert({
       crypto_id,
       quantity,
     });
 
-    if (error) {
-      throw new Error("Error adding portfolio: " + error.message);
-    }
+    if (error) throw new Error("Error adding portfolio: " + error.message);
   } catch (error) {
-    console.error("Error in addPortfolio:", error.message);
-    throw new Error(
-      error.message || "Unexpected error occurred while adding to portfolio."
-    );
+    throw error;
   }
 };
 
-export const updatePortfolio = async (params) => {
-  const { crypto_id, quantity } = params;
-
-  if (!crypto_id || !quantity) {
-    throw new Error("Missing required parameters: crypto_id, quantity");
-  }
-
+export const updateAsset = async (params) => {
   try {
+    const { crypto_id, quantity } = validateParams("updateAsset", params);
+
     const { error } = await supabase
       .from("Portfolio")
       .update({ quantity })
       .eq("crypto_id", crypto_id);
 
-    if (error) throw new Error("Error updating asset quantity.");
+    if (error)
+      throw new Error("Error updating asset quantity: " + error.message);
   } catch (error) {
-    console.error("Error in addPortfolio:", error.message);
-    throw new Error(
-      error.message || "Unexpected error occurred while updating portfolio."
-    );
+    throw error;
   }
 };
 
-export const removePortfolio = async (params) => {
-  const { crypto_id } = params;
-
-  if (!crypto_id) {
-    throw new Error("Missing required parameters: crypto_id, quantity");
-  }
-
+export const removeAsset = async (params) => {
   try {
+    const { crypto_id } = validateParams("removeAsset", params);
+
     const { error } = await supabase
       .from("Portfolio")
       .delete()
       .eq("crypto_id", crypto_id);
 
-    if (error) {
-      throw new Error("Error removing portfolio: " + error.message);
-    }
+    if (error) throw new Error("Error removing portfolio: " + error.message);
   } catch (error) {
-    console.error("Error in removePortfolio:", error.message);
-    throw new Error(
-      error.message ||
-        "Unexpected error occurred while removing from portfolio."
-    );
+    throw error;
   }
 };
 
@@ -110,7 +84,6 @@ export async function fetchCryptoList() {
 
     return data;
   } catch (error) {
-    console.error("Error in fetchCryptosFromDB:", error.message);
-    throw new Error(error.message || "Unexpected error occurred.");
+    throw error;
   }
 }
