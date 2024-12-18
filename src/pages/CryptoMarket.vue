@@ -295,10 +295,15 @@ export default {
 
 .pagination-controls {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: space-between; 
+  align-items: center; 
   margin-top: 20px;
+  width: 100%; 
+  flex-wrap: wrap; 
+  gap: 10px;
+  padding: 10px; 
 }
+
 
 .page-input-go {
   display: flex;

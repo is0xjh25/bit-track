@@ -1,60 +1,67 @@
 <template>
-    <q-btn
-      :color="buttonColor"
-      :icon="buttonIcon"
-      :class="customClass"
-      @click="onClick"
-    >
-      <slot></slot>
-    </q-btn>
-  </template>
-  
-  <script>
-  export default {
-    props: {
-      type: {
-        type: String,
-        required: true, // "edit", "save", "delete"
-      },
-      customClass: {
-        type: String,
-        default: "",
-      },
-    },
-    emits: ["click"],
-    computed: {
-      buttonColor() {
-        return {
-          edit: "primary",
-          save: "primary",
-          delete: "negative",
-        }[this.type];
-      },
-      buttonIcon() {
-        return {
-          edit: "edit",
-          save: "save",
-          delete: "delete",
-        }[this.type];
-      },
-    },
-    methods: {
-      onClick() {
-        this.$emit("click");
-      },
-    },
-  };
-  </script>
-  
-  <style scoped>
+  <q-btn
+    :color="buttonColor"
+    :icon="buttonIcon"
+    :class="customClass"
+    @click="onClick"
+  >
+    <slot></slot>
+  </q-btn>
+</template>
 
+<script>
+import { computed, defineComponent, toRefs } from "vue";
 
+export default defineComponent({
+  props: {
+    type: {
+      type: String,
+      required: true, // "edit", "save", "delete"
+    },
+    customClass: {
+      type: String,
+      default: "",
+    },
+  },
+  emits: ["click"],
+  setup(props, { emit }) {
+    const { type } = toRefs(props);
+
+    const buttonColor = computed(() => {
+      return {
+        edit: "primary",
+        save: "primary",
+        delete: "negative",
+      }[type.value];
+    });
+
+    const buttonIcon = computed(() => {
+      return {
+        edit: "edit",
+        save: "save",
+        delete: "delete",
+      }[type.value];
+    });
+
+    const onClick = () => {
+      emit("click");
+    };
+
+    return {
+      buttonColor,
+      buttonIcon,
+      onClick,
+    };
+  },
+});
+</script>
+
+<style scoped>
 .action-buttons {
   display: flex;
   justify-content: center;
   gap: 12px; 
 }
-
 
 .action-buttons q-btn {
   border-radius: 8px; 
@@ -91,6 +98,4 @@
 .remove-btn:hover {
   background-color: darkred; 
 }
-
-  </style>
-  
+</style>

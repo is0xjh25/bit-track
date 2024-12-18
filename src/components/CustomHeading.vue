@@ -10,9 +10,14 @@
 </template>
 
 <script>
-export default {
-  name: 'CustomHeading'
-};
+import { defineComponent } from "vue";
+
+export default defineComponent({
+  name: "CustomHeading", 
+  setup() {
+    return {};
+  },
+});
 </script>
 
 <style scoped>
