@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useLogger } from "src/composables/useLogger";
 import { fetchCryptoMarket } from "src/services/UseMarketAPI";
+import { validateParams } from "src/utils/Validator";
 
 export const useCryptoStore = defineStore("cryptoStore", () => {
   // State
@@ -27,13 +28,12 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
       const DATA_FRESHNESS_DURATION = 60000; // 1 minute
 
       let parsedData = null;
-
       // Safely parse cached data
       try {
         parsedData = storedData ? JSON.parse(storedData) : null;
       } catch (e) {
         logger.error("Error parsing cached data:", e.message);
-        localStorage.removeItem("cryptocurrencies"); // Clear corrupted data
+        localStorage.removeItem("cryptocurrencies");
       }
 
       const isDataFresh =
@@ -56,15 +56,12 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
           vs_currency: "usd",
         });
 
-        // Validate response
-
         if (!response || !Array.isArray(response)) {
           throw new Error("Invalid API response format.");
         }
 
         cryptocurrencies.value = response;
 
-        // Cache data in localStorage
         localStorage.setItem(
           "cryptocurrencies",
           JSON.stringify(cryptocurrencies.value)
@@ -105,7 +102,6 @@ export const useCryptoStore = defineStore("cryptoStore", () => {
     }
   };
 
-  // Getters
   const getPageData = (page = 1) => {
     const startIndex = (page - 1) * itemsPerPage.value;
     const endIndex = page * itemsPerPage.value;

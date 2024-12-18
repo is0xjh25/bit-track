@@ -101,9 +101,10 @@
 
 <script>
 import { ref } from "vue";
-import { supabase } from "../supabaseClient";
 import { useRouter } from "vue-router";
 import { useLogger } from "src/composables/useLogger";
+import { validateParams } from "src/utils/Validator";
+import { signUp, resetPassword } from "src/services/UseAuthAPI";
 
 export default {
   setup() {
@@ -116,20 +117,27 @@ export default {
     const logger = useLogger();
 
     const handleSignUp = async () => {
-      const { error } = await supabase.auth.signUp({
-        email: email.value,
-        password: password.value,
-      });
+      isLoading.value = true;
+      errorMessage.value = "";
+      successMessage.value = "";
 
-      if (error) {
-        errorMessage.value = error.message;
-        logger.error("Error signing up:", error.message);
-      } else {
-        successMessage.value = "Sign-up successful! Redirecting to login...";
-        errorMessage.value = "";
+      try {
+        const params = validateParams("signUp", {
+          email: email.value,
+          password: password.value,
+        });
+
+        const message = await signUp(params);
+        successMessage.value = message;
+
         setTimeout(() => {
           router.push("/login");
         }, 2000);
+      } catch (error) {
+        errorMessage.value = error.message;
+        logger.error("Error in handleSignUp:", error.message);
+      } finally {
+        isLoading.value = false;
       }
     };
 
@@ -138,24 +146,21 @@ export default {
     };
 
     const handleResetPassword = async () => {
-      if (!email.value) {
-        errorMessage.value = "Please enter your email to reset the password.";
-        logger.warn("Email is required to reset the password.");
-        return;
-      }
-
       isLoading.value = true;
-      const { error } = await supabase.auth.resetPasswordForEmail(email.value);
+      errorMessage.value = "";
+      successMessage.value = "";
 
-      if (error) {
+      try {
+        const params = validateParams("resetPassword", { email: email.value });
+
+        const message = await resetPassword(params);
+        successMessage.value = message;
+      } catch (error) {
         errorMessage.value = error.message;
-        logger.error("Error sending password reset email:", error.message);
-      } else {
-        successMessage.value = "Password reset email has been sent.";
-        errorMessage.value = "";
+        logger.error("Error in handleResetPassword:", error.message);
+      } finally {
+        isLoading.value = false;
       }
-
-      isLoading.value = false;
     };
 
     return {

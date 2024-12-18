@@ -1,9 +1,10 @@
 import axios from "axios";
+import { validateParams } from "src/utils/Validator";
 
 const COINGECKO_MARKET_URL = import.meta.env.VITE_COINGECKO_MARKET_URL;
 const COINGECKO_PRICE_URL = import.meta.env.VITE_COINGECKO_PRICE_URL;
 
-export async function fetchCryptoMarket(params = {}) {
+export async function fetchCryptoMarket(params) {
   try {
     const defaultParams = {
       vs_currency: "usd",
@@ -12,7 +13,10 @@ export async function fetchCryptoMarket(params = {}) {
       page: 1,
     };
 
-    const finalParams = { ...defaultParams, ...params };
+    const finalParams = validateParams("cryptoMarket", {
+      ...defaultParams,
+      ...params,
+    });
 
     const response = await axios.get(COINGECKO_MARKET_URL, {
       params: finalParams,
@@ -20,27 +24,17 @@ export async function fetchCryptoMarket(params = {}) {
 
     return response.data;
   } catch (error) {
-    console.error("Error fetching crypto market data:", error.message);
-    throw new Error(
-      "Could not fetch crypto market data. Please try again later."
-    );
+    throw error;
   }
 }
 
 export async function fetchCryptoPriceById(params) {
-  const { cryptoId, currency = "usd" } = params;
-
-  if (!cryptoId || typeof cryptoId !== "string") {
-    console.error("Invalid crypto ID provided. It must be a non-empty string.");
-    return null;
-  }
-
-  if (!currency || typeof currency !== "string") {
-    console.error("Invalid currency provided. It must be a non-empty string.");
-    return null;
-  }
-
   try {
+    const { cryptoId, currency = "usd" } = validateParams(
+      "cryptoPriceById",
+      params
+    );
+
     const response = await axios.get(COINGECKO_PRICE_URL, {
       params: {
         ids: cryptoId.toLowerCase(),
@@ -58,7 +52,6 @@ export async function fetchCryptoPriceById(params) {
       return null;
     }
   } catch (error) {
-    console.error(`Error fetching price for '${cryptoId}':`, error.message);
-    return null;
+    throw error;
   }
 }

@@ -104,12 +104,12 @@
     </q-card>
   </q-page>
 </template>
-
 <script>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { supabase } from "../supabaseClient";
-import { useLogger } from "/src/composables/useLogger";
+import { useLogger } from "src/composables/useLogger";
+import { validateParams } from "src/utils/Validator";
+import { checkAuth, updatePassword } from "src/services/UseAuthAPI";
 
 export default {
   setup() {
@@ -121,74 +121,48 @@ export default {
     const successMessage = ref("");
     const logger = useLogger();
 
-    const checkAuth = async () => {
+    const handleCheckAuth = async () => {
       const accessToken = router.currentRoute.value.query.access_token;
       const refreshToken = router.currentRoute.value.query.refresh_token;
 
-      if (!accessToken || !refreshToken) {
-        errorMessage.value =
-          "Invalid or expired link. Please request a new reset link.";
-        logger.error("Invalid or expired link.");
+      try {
+        const params = validateParams("checkAuth", {
+          accessToken,
+          refreshToken,
+        });
+        await checkAuth(params.accessToken, params.refreshToken);
+      } catch (error) {
+        logger.error("Error in handleCheckAuth:", error.message);
+        errorMessage.value = "Error: Invalid or expired token.";
         setTimeout(() => {
           router.push("/login");
         }, 2000);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (error || !data) {
-          errorMessage.value =
-            "Session expired or invalid. Please request a new reset link.";
-          logger.error("Session expired or invalid.");
-          setTimeout(() => {
-            router.push("/login");
-          }, 2000);
-        }
-      } catch (error) {
-        logger.error("Error setting session:", error.message);
-        errorMessage.value = "An error occurred. Please try again later.";
       }
     };
 
     const handlePasswordUpdate = async () => {
-      if (!newPassword.value || !confirmPassword.value) {
-        errorMessage.value = "Both password fields are required.";
-        logger.warn("Password fields are required.");
-        return;
-      }
-      if (newPassword.value !== confirmPassword.value) {
-        errorMessage.value = "Passwords do not match.";
-        logger.warn("Passwords do not match.");
-        return;
-      }
-
       isLoading.value = true;
+      successMessage.value = "";
 
       try {
-        const { error } = await supabase.auth.updateUser({
+        const params = validateParams("updatePassword", {
           password: newPassword.value,
+          confirmPassword: confirmPassword.value,
         });
 
-        if (error) {
-          errorMessage.value =
-            error.message ||
-            "An error occurred while resetting the password. Please try again.";
-          logger.error("Error updating password:", error.message);
-        } else {
-          successMessage.value = "Password has been reset successfully!";
-          setTimeout(() => {
-            redirectToLogin();
-          }, 2000);
+        if (params.password !== params.confirmPassword) {
+          throw new Error("Passwords do not match.");
         }
+
+        const message = await updatePassword(params.password);
+        successMessage.value = message;
+
+        setTimeout(() => {
+          redirectToLogin();
+        }, 2000);
       } catch (error) {
-        errorMessage.value =
-          "An unexpected error occurred. Please try again later.";
-        logger.error("Error updating password:", error.message);
+        errorMessage.value = error.message;
+        logger.error("Error in handlePasswordUpdate:", error.message);
       } finally {
         isLoading.value = false;
       }
@@ -203,7 +177,7 @@ export default {
     };
 
     onMounted(() => {
-      checkAuth();
+      handleCheckAuth();
     });
 
     return {
@@ -219,7 +193,6 @@ export default {
   },
 };
 </script>
-
 <style scoped>
 .error {
   color: var(--q-negative);
